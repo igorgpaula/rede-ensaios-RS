@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rede de Ensaios RS - V4</title>
+<style>
+:root{--bg:#f4f7f5;--card:#fff;--dark:#14251e;--dark2:#1d352b;--text:#17231e;--muted:#708078;--line:#dfe7e2;--green:#208a57;--red:#c94b4b;--yellow:#d59a19}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}.hidden{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#e7f0ea,#fafcfb)}
+.login-card{width:min(440px,92vw);background:white;padding:36px;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px #17312618;text-align:center}
+.logo{font-size:48px}.login h1{margin:8px 0 4px}.login p{font-size:13px;color:var(--muted);line-height:1.5}
+.google-btn{width:100%;margin-top:16px;padding:13px;border:1px solid #ccd7d0;background:white;border-radius:10px;font-weight:700;cursor:pointer}
+.login-status{min-height:20px;color:var(--red);font-size:12px;margin-top:12px}
+.app{display:flex;min-height:100vh}.sidebar{width:235px;position:fixed;inset:0 auto 0 0;background:var(--dark);color:#fff;padding:20px 14px}
+.brand{font-weight:800;font-size:18px;padding:8px 10px 22px}.brand small{display:block;color:#9fb5aa;font-size:10px;margin-top:4px}
+.nav{display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;color:#d9e5df;text-align:left;padding:12px;border-radius:9px;cursor:pointer}.nav button.active,.nav button:hover{background:var(--dark2)}
+.userbox{position:absolute;bottom:18px;left:14px;right:14px;border-top:1px solid #ffffff18;padding-top:14px;display:flex;gap:9px;align-items:center}
+.avatar{width:36px;height:36px;border-radius:50%;background:#dcebe3;color:#225b40;display:grid;place-items:center;font-weight:800;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}
+.user-name{font-size:12px;font-weight:700}.user-email{font-size:9px;color:#9fb5aa;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{margin-left:235px;width:calc(100% - 235px)}.topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.pill{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 11px;font-size:12px;cursor:pointer}.content{padding:24px;max-width:1400px;margin:auto}
+.page{display:none}.page.active{display:block}h1{font-size:24px;margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.card,.panel{background:#fff;border:1px solid var(--line);border-radius:12px}.card{padding:15px}.label{font-size:11px;color:var(--muted)}.value{font-size:25px;font-weight:800;margin-top:5px}
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}.panel{padding:17px;margin-bottom:18px}.panel h2{font-size:15px;margin:0 0 13px}
+.map{height:340px;background:linear-gradient(135deg,#edf4ef,#e8f0e9);position:relative;border-radius:9px;overflow:hidden}.rs{position:absolute;left:23%;top:12%;width:55%;height:76%;background:#d9e8dc;clip-path:polygon(8% 7%,25% 2%,47% 9%,65% 0,82% 10%,91% 27%,86% 43%,98% 57%,87% 70%,79% 91%,57% 85%,44% 97%,29% 82%,10% 88%,14% 69%,3% 53%,12% 38%,4% 22%)}.dot{position:absolute;width:17px;height:17px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px #555}.g{background:var(--green)}.y{background:var(--yellow)}.r{background:var(--red)}.d1{left:50%;top:49%}.d2{left:43%;top:31%}.d3{left:31%;top:27%}.d4{left:61%;top:36%}.d5{left:70%;top:53%}
+.status{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:11px 0;font-size:13px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}.table th{background:#f8faf9;color:var(--muted)}
+.primary{background:var(--green);color:white;border:0;border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}.filters{display:flex;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);padding:13px;border-radius:10px;margin-bottom:18px}select,input,textarea{border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}
+.modal{position:fixed;inset:0;background:#0d171380;display:none;place-items:center;z-index:20;padding:16px}.modal.show{display:grid}.modal-card{width:min(580px,100%);background:white;border-radius:14px;padding:21px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:flex;flex-direction:column;gap:4px}.field.full{grid-column:1/-1}.field label{font-size:10px;color:var(--muted);font-weight:700}textarea{min-height:80px}.actions{text-align:right;margin-top:14px}.audit{background:#f5f8f6;padding:10px;border-radius:8px;font-size:11px;color:var(--muted);margin-top:12px}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}@media(max-width:700px){.sidebar{position:static;width:100%}.app{display:block}.main{margin:0;width:100%}.userbox{display:none}.nav{flex-direction:row;overflow:auto}}
+</style>
+</head>
+<body>
+<div id="loginScreen" class="login">
+  <div class="login-card">
+    <div class="logo">🌾</div><h1>Rede de Ensaios RS</h1>
+    <p>Central de gestão operacional dos ensaios de trigo</p>
+    <button id="googleBtn" class="google-btn">G &nbsp; Entrar com Google</button>
+    <div id="loginStatus" class="login-status"></div>
+    <p>🔐 O login é processado pelo Google/Firebase. O site não recebe sua senha.</p>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+<aside class="sidebar">
+<div class="brand">🌾 REDE RS<small>Central de Ensaios</small></div>
+<div class="nav">
+<button class="active" data-page="overview">🏠 Visão Geral</button>
+<button data-page="planning">📅 Planejamento</button>
+<button data-page="management">📝 Manejo Realizado</button>
+<button data-page="users">👥 Usuários</button>
+</div>
+<div class="userbox"><div class="avatar" id="avatar">U</div><div><div class="user-name" id="userName">Usuário</div><div class="user-email" id="userEmail"></div></div></div>
+</aside>
+<main class="main">
+<header class="topbar"><strong id="title">Visão Geral da Rede</strong><div><span class="pill">2026</span> <button id="logoutBtn" class="pill">Sair</button></div></header>
+<div class="content">
+
+<section class="page active" id="overview">
+<h1>Visão geral da rede</h1><div class="sub">Autenticação Google real conectada ao Firebase</div>
+<div class="cards"><div class="card"><div class="label">ENSAIOS</div><div class="value">42</div></div><div class="card"><div class="label">LOCAIS</div><div class="value">18</div></div><div class="card"><div class="label">PARCELAS</div><div class="value">12.480</div></div><div class="card"><div class="label">PRÓX. COLHEITA</div><div class="value">7</div></div><div class="card"><div class="label">ATRASADOS</div><div class="value" style="color:var(--red)">3</div></div></div>
+<div class="grid2"><div class="panel"><h2>🗺️ Mapa — ainda ilustrativo</h2><div class="map"><div class="rs"></div><div class="dot g d1"></div><div class="dot g d2"></div><div class="dot y d3"></div><div class="dot g d4"></div><div class="dot r d5"></div></div></div>
+<div class="panel"><h2>Sessão autenticada</h2><div id="sessionInfo" style="font-size:12px;line-height:1.8"></div><hr style="border:0;border-top:1px solid var(--line);margin:15px 0"><div class="status"><span>🟢 Em dia</span><b>31</b></div><div class="status"><span>🟡 Atenção</span><b>8</b></div><div class="status"><span>🔴 Atrasado</span><b>3</b></div></div></div>
+</section>
+
+<section class="page" id="planning"><h1>Planejamento</h1><div class="sub">Dados demonstrativos</div><div class="panel"><table class="table"><tr><th>Ensaio</th><th>Atividade</th><th>Planejado</th><th>Status</th></tr><tr><td>VCU Passo Fundo</td><td>Avaliação</td><td>27/08/2026</td><td>Atenção</td></tr><tr><td>PRYT Ijuí</td><td>Fungicida</td><td>28/08/2026</td><td>Em dia</td></tr></table></div></section>
+
+<section class="page" id="management">
+<h1>Manejo realizado</h1><div class="sub">O usuário Google será associado automaticamente ao registro</div>
+<div class="filters"><select><option>Passo Fundo</option></select><select><option>VCU 2026</option></select><button id="newActivity" class="primary">＋ Registrar atividade</button></div>
+<div class="panel"><table class="table" id="history"><tr><th>Data</th><th>Atividade</th><th>Produto</th><th>Dose</th><th>Registrado por</th><th>Observação</th></tr><tr><td>02/08</td><td>Fungicida</td><td>Produto Y</td><td>0,6 L/ha</td><td>Carlos</td><td>Boa condição</td></tr></table><div class="audit">Nesta V4 a nova atividade ainda não vai ao banco. O próximo passo é conectar o Cloud Firestore.</div></div>
+</section>
+
+<section class="page" id="users"><h1>Usuários</h1><div class="sub">Identidade retornada pelo Firebase Authentication</div><div class="panel"><table class="table"><tr><th>Nome</th><th>E-mail</th><th>UID</th><th>Provider</th></tr><tr><td id="uName"></td><td id="uEmail"></td><td id="uUid"></td><td>Google</td></tr></table></div></section>
+
+</div></main></div>
+
+<div id="modal" class="modal"><div class="modal-card">
+<h2>＋ Registrar atividade</h2>
+<div class="formgrid"><div class="field"><label>DATA</label><input id="date" type="date"></div><div class="field"><label>ATIVIDADE</label><select id="type"><option>Fungicida</option><option>Herbicida</option><option>Adubação</option><option>Avaliação</option><option>Colheita</option></select></div><div class="field"><label>PRODUTO</label><input id="product"></div><div class="field"><label>DOSE</label><input id="dose"></div><div class="field full"><label>OBSERVAÇÃO</label><textarea id="obs"></textarea></div></div>
+<div id="audit" class="audit"></div><div class="actions"><button id="cancel" class="pill">Cancelar</button> <button id="save" class="primary">Salvar</button></div>
+</div></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+const firebaseConfig={
+ apiKey:"AIzaSyA9qYtxNpXoVgV85SfTmOPYBLkuK2x6Sa8",
+ authDomain:"rede-de-ensaios---rs.firebaseapp.com",
+ projectId:"rede-de-ensaios---rs",
+ storageBucket:"rede-de-ensaios---rs.firebasestorage.app",
+ messagingSenderId:"845230162241",
+ appId:"1:845230162241:web:1b6d2d527e065e36f121c0",
+ measurementId:"G-H4TPRJDWT2"
+};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+auth.useDeviceLanguage();
+const provider=new GoogleAuthProvider();
+provider.setCustomParameters({prompt:"select_account"});
+let currentUser=null;
+
+const $=id=>document.getElementById(id);
+
+$("googleBtn").onclick=async()=>{
+ $("loginStatus").textContent="Abrindo login Google...";
+ try{await signInWithPopup(auth,provider);$("loginStatus").textContent=""}
+ catch(e){
+   console.error(e);
+   const m={"auth/popup-closed-by-user":"Login cancelado.","auth/popup-blocked":"O navegador bloqueou o pop-up.","auth/unauthorized-domain":"Este domínio não está autorizado no Firebase.","auth/network-request-failed":"Falha de conexão."};
+   $("loginStatus").textContent=m[e.code]||("Erro: "+e.code);
+ }
+};
+$("logoutBtn").onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,user=>{
+ currentUser=user;
+ if(user){$("loginScreen").classList.add("hidden");$("app").classList.remove("hidden");renderUser(user)}
+ else{$("app").classList.add("hidden");$("loginScreen").classList.remove("hidden")}
+});
+
+function renderUser(u){
+ const name=u.displayName||"Usuário",email=u.email||"";
+ $("userName").textContent=name;$("userEmail").textContent=email;
+ $("avatar").innerHTML=u.photoURL?'<img src="'+u.photoURL+'" alt="foto">':name.slice(0,1).toUpperCase();
+ $("sessionInfo").innerHTML="<b>"+esc(name)+"</b><br>"+esc(email)+"<br><small>UID: "+esc(u.uid)+"</small>";
+ $("uName").textContent=name;$("uEmail").textContent=email;$("uUid").textContent=u.uid;
+ $("audit").textContent="Registrado por: "+name+" • "+email+" • UID "+u.uid;
+}
+
+const titles={overview:"Visão Geral da Rede",planning:"Planejamento",management:"Manejo Realizado",users:"Usuários"};
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+ document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(b.dataset.page).classList.add("active");$("title").textContent=titles[b.dataset.page];
+});
+
+$("newActivity").onclick=()=>{$("date").value=new Date().toISOString().slice(0,10);$("modal").classList.add("show")};
+$("cancel").onclick=()=>$("modal").classList.remove("show");
+$("save").onclick=()=>{
+ if(!currentUser)return;
+ const date=$("date").value;if(!date)return alert("Informe a data");
+ const vals=[new Date(date+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}),$("type").value,$("product").value||"—",$("dose").value||"—",currentUser.displayName||currentUser.email,$("obs").value||"—"];
+ const tr=document.createElement("tr");vals.forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});$("history").appendChild(tr);$("modal").classList.remove("show");
+};
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+</script>
+</body></html>
