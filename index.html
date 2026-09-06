@@ -3,45 +3,604 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Rede de Ensaios RS — V5</title>
+<title>Rede de Ensaios RS — V6</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+ integrity="sha256-p4NxAoJBhIINfQ3yn5/NdODNseJPQwz1I8QXvrY5f9A=" crossorigin=""/>
+
 <style>
-:root{--bg:#f4f7f5;--card:#fff;--dark:#14251e;--dark2:#1d352b;--text:#17231e;--muted:#708078;--line:#dfe7e2;--green:#208a57;--red:#c94b4b;--yellow:#d59a19}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}button,input,select,textarea{font:inherit}.hidden{display:none!important}
-.login,.denied{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#e7f0ea,#fafcfb)}
-.login-card,.denied-card{width:min(460px,92vw);background:#fff;padding:36px;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px #17312618;text-align:center}.logo{font-size:48px}.login h1{margin:8px 0 4px}.login p,.denied p{font-size:13px;color:var(--muted);line-height:1.5}.google-btn{width:100%;margin-top:16px;padding:13px;border:1px solid #ccd7d0;background:#fff;border-radius:10px;font-weight:700;cursor:pointer}.login-status{min-height:20px;color:var(--red);font-size:12px;margin-top:12px}
-.app{display:flex;min-height:100vh}.sidebar{width:235px;position:fixed;inset:0 auto 0 0;background:var(--dark);color:#fff;padding:20px 14px}.brand{font-weight:800;font-size:18px;padding:8px 10px 22px}.brand small{display:block;color:#9fb5aa;font-size:10px;margin-top:4px}.nav{display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;color:#d9e5df;text-align:left;padding:12px;border-radius:9px;cursor:pointer}.nav button.active,.nav button:hover{background:var(--dark2)}.userbox{position:absolute;bottom:18px;left:14px;right:14px;border-top:1px solid #ffffff18;padding-top:14px;display:flex;gap:9px;align-items:center}.avatar{width:36px;height:36px;border-radius:50%;background:#dcebe3;color:#225b40;display:grid;place-items:center;font-weight:800;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.user-name{font-size:12px;font-weight:700}.user-email{font-size:9px;color:#9fb5aa;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.main{margin-left:235px;width:calc(100% - 235px)}.topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0}.pill{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 11px;font-size:12px;cursor:pointer}.content{padding:24px;max-width:1400px;margin:auto}.page{display:none}.page.active{display:block}h1{font-size:24px;margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:18px}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.card,.panel{background:#fff;border:1px solid var(--line);border-radius:12px}.card{padding:15px}.label{font-size:11px;color:var(--muted)}.value{font-size:25px;font-weight:800;margin-top:5px}.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}.panel{padding:17px;margin-bottom:18px}.panel h2{font-size:15px;margin:0 0 13px}.status{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding:11px 0;font-size:13px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}.table th{background:#f8faf9;color:var(--muted)}.primary{background:var(--green);color:#fff;border:0;border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}.secondary{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 13px;cursor:pointer}.filters{display:flex;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);padding:13px;border-radius:10px;margin-bottom:18px}select,input,textarea{border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}.audit{background:#f5f8f6;padding:10px;border-radius:8px;font-size:11px;color:var(--muted);margin-top:12px}.modal{position:fixed;inset:0;background:#0d171380;display:none;place-items:center;z-index:20;padding:16px}.modal.show{display:grid}.modal-card{width:min(620px,100%);background:#fff;border-radius:14px;padding:21px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:flex;flex-direction:column;gap:4px}.field.full{grid-column:1/-1}.field label{font-size:10px;color:var(--muted);font-weight:700}textarea{min-height:80px}.actions{text-align:right;margin-top:14px}.toast{display:none;position:fixed;right:20px;bottom:20px;background:#173328;color:#fff;padding:12px 16px;border-radius:9px;font-size:12px;z-index:30}.toast.show{display:block}
-@media(max-width:900px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}@media(max-width:700px){.sidebar{position:static;width:100%}.app{display:block}.main{margin:0;width:100%}.userbox{display:none}.nav{flex-direction:row;overflow:auto}}
+:root{
+  --bg:#f4f7f5;--card:#fff;--dark:#14251e;--dark2:#1d352b;--text:#17231e;
+  --muted:#708078;--line:#dfe7e2;--green:#208a57;--green2:#176a43;
+  --red:#c94b4b;--yellow:#d59a19;--blue:#3d6fd4
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}.hidden{display:none!important}
+
+/* LOGIN */
+.login{min-height:100vh;display:grid;place-items:center;background:linear-gradient(135deg,#e7f0ea,#fafcfb)}
+.login-card{width:min(440px,92vw);background:#fff;padding:36px;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px #17312618;text-align:center}
+.logo{font-size:48px}.login h1{margin:8px 0 4px}.login p{font-size:13px;color:var(--muted);line-height:1.5}
+.google-btn{width:100%;margin-top:16px;padding:13px;border:1px solid #ccd7d0;background:#fff;border-radius:10px;font-weight:700;cursor:pointer}
+.login-status{min-height:20px;color:var(--red);font-size:12px;margin-top:12px}
+
+/* ACCESS DENIED */
+.denied{min-height:100vh;display:grid;place-items:center}.denied-card{width:min(480px,92vw);background:#fff;border:1px solid var(--line);border-radius:18px;padding:32px;text-align:center}
+
+/* APP */
+.app{display:flex;min-height:100vh}.sidebar{width:245px;position:fixed;inset:0 auto 0 0;background:var(--dark);color:#fff;padding:20px 14px}
+.brand{font-weight:800;font-size:18px;padding:8px 10px 22px}.brand small{display:block;color:#9fb5aa;font-size:10px;margin-top:4px}
+.nav{display:flex;flex-direction:column;gap:5px}.nav button{border:0;background:transparent;color:#d9e5df;text-align:left;padding:12px;border-radius:9px;cursor:pointer}
+.nav button.active,.nav button:hover{background:var(--dark2)}
+.userbox{position:absolute;bottom:18px;left:14px;right:14px;border-top:1px solid #ffffff18;padding-top:14px;display:flex;gap:9px;align-items:center}
+.avatar{width:36px;height:36px;border-radius:50%;background:#dcebe3;color:#225b40;display:grid;place-items:center;font-weight:800;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}
+.user-name{font-size:12px;font-weight:700}.user-email{font-size:9px;color:#9fb5aa;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.main{margin-left:245px;width:calc(100% - 245px)}
+.topbar{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:900}
+.pill{border:1px solid var(--line);background:#fff;border-radius:20px;padding:7px 11px;font-size:12px;cursor:pointer}
+.content{padding:24px;max-width:1500px;margin:auto}.page{display:none}.page.active{display:block}
+h1{font-size:24px;margin:0 0 4px}.sub{font-size:13px;color:var(--muted);margin-bottom:18px}
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.card,.panel{background:#fff;border:1px solid var(--line);border-radius:12px}.card{padding:15px}
+.label{font-size:11px;color:var(--muted)}.value{font-size:25px;font-weight:800;margin-top:5px}
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}.panel{padding:17px;margin-bottom:18px}.panel h2{font-size:15px;margin:0 0 13px}
+.filters{display:flex;gap:9px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);padding:13px;border-radius:10px;margin-bottom:18px}
+select,input,textarea{border:1px solid var(--line);border-radius:8px;padding:9px;background:#fff}
+.primary{background:var(--green);color:#fff;border:0;border-radius:8px;padding:9px 13px;font-weight:700;cursor:pointer}
+.secondary{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 13px;cursor:pointer}
+.danger{background:#fff;color:var(--red);border:1px solid #efc9c9;border-radius:8px;padding:7px 10px;cursor:pointer}
+.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}.table th{background:#f8faf9;color:var(--muted)}
+.tag{font-size:10px;padding:3px 6px;border-radius:12px;background:#eef2ef}.tag.green{background:#e5f4eb;color:#17643f}.tag.red{background:#fae7e7;color:#a63232}.tag.yellow{background:#fff1cf;color:#8a6500}
+#map{height:520px;border-radius:10px;overflow:hidden}
+.audit{background:#f5f8f6;padding:10px;border-radius:8px;font-size:11px;color:var(--muted);margin-top:12px}
+.toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.csvbox{border:1px dashed #b8c7be;border-radius:10px;padding:16px;background:#f8fbf9}
+.csvbox input{width:100%}
+.help{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:#0d171380;display:none;place-items:center;z-index:2000;padding:16px}.modal.show{display:grid}
+.modal-card{width:min(720px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;padding:21px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:flex;flex-direction:column;gap:4px}.field.full{grid-column:1/-1}.field label{font-size:10px;color:var(--muted);font-weight:700}
+textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
+.toast{display:none;position:fixed;right:20px;bottom:20px;background:#173328;color:#fff;padding:12px 16px;border-radius:9px;font-size:12px;z-index:3000}.toast.show{display:block}
+.kpi-small{font-size:11px;color:var(--muted);margin-top:5px}
+.admin-only.hidden-admin{display:none!important}
+
+@media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:760px){
+  .sidebar{position:static;width:100%}.app{display:block}.main{margin:0;width:100%}.userbox{display:none}
+  .nav{flex-direction:row;overflow:auto}.topbar{position:static}.content{padding:14px}
+  .formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}#map{height:420px}
+}
 </style>
 </head>
 <body>
-<div id="loginScreen" class="login"><div class="login-card"><div class="logo">🌾</div><h1>Rede de Ensaios RS</h1><p>Central de gestão operacional dos ensaios de trigo</p><button id="googleBtn" class="google-btn">G &nbsp; Entrar com Google</button><div id="loginStatus" class="login-status"></div><p>🔐 Acesso liberado somente para usuários cadastrados no Firestore.</p></div></div>
-<div id="deniedScreen" class="denied hidden"><div class="denied-card"><div class="logo">🔒</div><h2>Acesso não autorizado</h2><p id="deniedMsg"></p><button id="deniedLogoutBtn" class="secondary">Sair</button></div></div>
+
+<div id="loginScreen" class="login">
+  <div class="login-card">
+    <div class="logo">🌾</div>
+    <h1>Rede de Ensaios RS</h1>
+    <p>Central de gestão operacional dos ensaios de trigo</p>
+    <button id="googleBtn" class="google-btn">G &nbsp; Entrar com Google</button>
+    <div id="loginStatus" class="login-status"></div>
+    <p>🔐 Acesso liberado somente para usuários cadastrados no Firestore.</p>
+  </div>
+</div>
+
+<div id="deniedScreen" class="denied hidden">
+  <div class="denied-card">
+    <div class="logo">🔒</div>
+    <h2>Acesso não autorizado</h2>
+    <p id="deniedMsg"></p>
+    <button id="deniedLogoutBtn" class="secondary">Sair</button>
+  </div>
+</div>
+
 <div id="app" class="app hidden">
-<aside class="sidebar"><div class="brand">🌾 REDE RS<small>Central de Ensaios</small></div><div class="nav"><button class="active" data-page="overview">🏠 Visão Geral</button><button data-page="planning">📅 Planejamento</button><button data-page="management">📝 Manejo Realizado</button><button data-page="users">👥 Usuários</button></div><div class="userbox"><div class="avatar" id="avatar">U</div><div><div class="user-name" id="userName">Usuário</div><div class="user-email" id="userEmail"></div></div></div></aside>
-<main class="main"><header class="topbar"><strong id="title">Visão Geral da Rede</strong><div><span class="pill" id="profileBadge">perfil</span> <button id="logoutBtn" class="pill">Sair</button></div></header><div class="content">
-<section class="page active" id="overview"><h1>Visão geral da rede</h1><div class="sub">V5 conectada ao Firebase Authentication e Cloud Firestore</div><div class="cards"><div class="card"><div class="label">ENSAIOS</div><div class="value">42</div></div><div class="card"><div class="label">LOCAIS</div><div class="value">18</div></div><div class="card"><div class="label">PARCELAS</div><div class="value">12.480</div></div><div class="card"><div class="label">PRÓX. COLHEITA</div><div class="value">7</div></div><div class="card"><div class="label">ATRASADOS</div><div class="value" style="color:var(--red)">3</div></div></div><div class="grid2"><div class="panel"><h2>👤 Sessão autorizada</h2><div id="sessionInfo" style="font-size:12px;line-height:1.8"></div></div><div class="panel"><h2>Status</h2><div class="status"><span>🟢 Em dia</span><b>31</b></div><div class="status"><span>🟡 Atenção</span><b>8</b></div><div class="status"><span>🔴 Atrasado</span><b>3</b></div></div></div></section>
-<section class="page" id="planning"><h1>Planejamento</h1><div class="sub">Dados demonstrativos por enquanto</div><div class="panel"><table class="table"><tr><th>Ensaio</th><th>Atividade</th><th>Planejado</th><th>Status</th></tr><tr><td>VCU Passo Fundo</td><td>Avaliação</td><td>27/08/2026</td><td>Atenção</td></tr><tr><td>PRYT Ijuí</td><td>Fungicida</td><td>28/08/2026</td><td>Em dia</td></tr></table></div></section>
-<section class="page" id="management"><h1>Manejo realizado</h1><div class="sub">As atividades abaixo são lidas e gravadas no Firestore</div><div class="filters"><input id="trialId" value="VCU-PF-2026" placeholder="ensaioId"><button id="newActivity" class="primary">＋ Registrar atividade</button><button id="reloadBtn" class="secondary">↻ Atualizar</button></div><div class="panel"><table class="table" id="history"><thead><tr><th>Data</th><th>Atividade</th><th>Produto</th><th>Dose</th><th>Registrado por</th><th>Observação</th></tr></thead><tbody></tbody></table><div id="emptyState" class="audit">Nenhuma atividade cadastrada ainda.</div></div></section>
-<section class="page" id="users"><h1>Usuários</h1><div class="sub">Seu cadastro de acesso no Firestore</div><div class="panel"><table class="table"><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>UID</th></tr><tr><td id="uName"></td><td id="uEmail"></td><td id="uProfile"></td><td id="uUid"></td></tr></table></div></section>
-</div></main></div>
-<div id="modal" class="modal"><div class="modal-card"><h2>＋ Registrar atividade</h2><div class="formgrid"><div class="field"><label>ENSAIO ID</label><input id="activityTrialId"></div><div class="field"><label>DATA</label><input id="date" type="date"></div><div class="field"><label>ATIVIDADE</label><select id="type"><option>Fungicida</option><option>Herbicida</option><option>Adubação</option><option>Avaliação</option><option>Colheita</option><option>Outra</option></select></div><div class="field"><label>PRODUTO</label><input id="product"></div><div class="field"><label>DOSE</label><input id="dose"></div><div class="field full"><label>OBSERVAÇÃO</label><textarea id="obs"></textarea></div></div><div id="audit" class="audit"></div><div class="actions"><button id="cancel" class="secondary">Cancelar</button> <button id="save" class="primary">Salvar</button></div></div></div>
+<aside class="sidebar">
+  <div class="brand">🌾 REDE RS<small>Central de Ensaios</small></div>
+  <div class="nav">
+    <button class="active" data-page="overview">🏠 Visão Geral</button>
+    <button data-page="mapPage">🗺️ Mapa Real</button>
+    <button data-page="locations">📍 Locais</button>
+    <button data-page="trials">🔬 Ensaios</button>
+    <button data-page="management">📝 Manejo</button>
+  </div>
+  <div class="userbox">
+    <div class="avatar" id="avatar">U</div>
+    <div><div class="user-name" id="userName">Usuário</div><div class="user-email" id="userEmail"></div></div>
+  </div>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <strong id="title">Visão Geral da Rede</strong>
+  <div><span class="pill" id="profileBadge">perfil</span> <button id="logoutBtn" class="pill">Sair</button></div>
+</header>
+
+<div class="content">
+
+<section class="page active" id="overview">
+  <h1>Visão geral da rede</h1>
+  <div class="sub">V6 conectada ao Firestore, com cadastro real de locais e ensaios</div>
+  <div class="cards">
+    <div class="card"><div class="label">LOCAIS</div><div class="value" id="kpiLocations">0</div></div>
+    <div class="card"><div class="label">ENSAIOS</div><div class="value" id="kpiTrials">0</div></div>
+    <div class="card"><div class="label">PARCELAS</div><div class="value" id="kpiPlots">0</div></div>
+    <div class="card"><div class="label">COM COORDENADAS</div><div class="value" id="kpiGeo">0</div></div>
+    <div class="card"><div class="label">ATIVIDADES</div><div class="value" id="kpiActivities">0</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>🗺️ Prévia do mapa</h2>
+      <div id="mapOverview" style="height:380px;border-radius:10px"></div>
+    </div>
+    <div class="panel">
+      <h2>Resumo</h2>
+      <div id="overviewSummary" class="help">Carregando dados...</div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="mapPage">
+  <h1>Mapa real dos ensaios</h1>
+  <div class="sub">Mapa Leaflet/OpenStreetMap alimentado por latitude e longitude cadastradas no Firestore</div>
+  <div class="filters">
+    <select id="mapStatusFilter"><option value="">Todos os status</option><option>Em dia</option><option>Atenção</option><option>Atrasado</option></select>
+    <select id="mapTypeFilter"><option value="">Todos os tipos</option></select>
+    <button class="secondary" id="fitMapBtn">Ajustar enquadramento</button>
+  </div>
+  <div class="panel"><div id="map"></div></div>
+</section>
+
+<section class="page" id="locations">
+  <h1>Locais</h1>
+  <div class="sub">Cadastro dos locais físicos da rede, com latitude e longitude</div>
+
+  <div class="toolbar">
+    <div class="help">Use um local por área física. Vários ensaios podem compartilhar o mesmo local.</div>
+    <button id="newLocationBtn" class="primary admin-only">＋ Novo local</button>
+  </div>
+
+  <div class="panel">
+    <table class="table" id="locationsTable">
+      <thead><tr><th>ID</th><th>Local</th><th>Município</th><th>Latitude</th><th>Longitude</th><th>Região</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel admin-only">
+    <h2>📤 Importar locais por CSV</h2>
+    <div class="csvbox">
+      <input type="file" id="locationsCsv" accept=".csv,text/csv">
+      <p class="help">Cabeçalhos aceitos: <b>local_id, nome, municipio, latitude, longitude, regiao</b>. Separador vírgula ou ponto e vírgula.</p>
+      <button id="importLocationsBtn" class="primary">Importar CSV de locais</button>
+      <button id="downloadLocationsTemplateBtn" class="secondary">Baixar modelo CSV</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="trials">
+  <h1>Ensaios</h1>
+  <div class="sub">Cadastro dos ensaios vinculados aos locais</div>
+
+  <div class="toolbar">
+    <div class="help">Cada ensaio deve apontar para um <b>local_id</b> existente.</div>
+    <button id="newTrialBtn" class="primary admin-only">＋ Novo ensaio</button>
+  </div>
+
+  <div class="panel">
+    <table class="table" id="trialsTable">
+      <thead><tr><th>ID</th><th>Ensaio</th><th>Tipo</th><th>Local</th><th>Parcelas</th><th>Semeadura</th><th>Colheita prevista</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel admin-only">
+    <h2>📤 Importar ensaios por CSV</h2>
+    <div class="csvbox">
+      <input type="file" id="trialsCsv" accept=".csv,text/csv">
+      <p class="help">Cabeçalhos aceitos: <b>ensaio_id, nome, tipo, ano, local_id, n_parcelas, data_semeadura, data_colheita_prevista, responsavel, status</b>.</p>
+      <button id="importTrialsBtn" class="primary">Importar CSV de ensaios</button>
+      <button id="downloadTrialsTemplateBtn" class="secondary">Baixar modelo CSV</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="management">
+  <h1>Manejo realizado</h1>
+  <div class="sub">Atividades gravadas no Firestore</div>
+  <div class="filters">
+    <select id="activityTrialFilter"><option value="">Todos os ensaios</option></select>
+    <button id="reloadActivitiesBtn" class="secondary">↻ Atualizar</button>
+  </div>
+  <div class="panel">
+    <table class="table" id="activitiesTable">
+      <thead><tr><th>Data</th><th>Ensaio</th><th>Atividade</th><th>Produto</th><th>Dose</th><th>Registrado por</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+</main>
+</div>
+
+<!-- LOCATION MODAL -->
+<div id="locationModal" class="modal"><div class="modal-card">
+  <h2 id="locationModalTitle">Novo local</h2>
+  <div class="formgrid">
+    <div class="field"><label>LOCAL ID</label><input id="locId" placeholder="ex.: PF-01"></div>
+    <div class="field"><label>NOME DO LOCAL</label><input id="locName" placeholder="ex.: Passo Fundo - Área 1"></div>
+    <div class="field"><label>MUNICÍPIO</label><input id="locCity" placeholder="Passo Fundo"></div>
+    <div class="field"><label>REGIÃO</label><input id="locRegion" placeholder="Norte"></div>
+    <div class="field"><label>LATITUDE</label><input id="locLat" type="number" step="any" placeholder="-28.2628"></div>
+    <div class="field"><label>LONGITUDE</label><input id="locLng" type="number" step="any" placeholder="-52.4068"></div>
+    <div class="field full"><label>OBSERVAÇÃO</label><textarea id="locObs"></textarea></div>
+  </div>
+  <div class="audit">Dica: use coordenadas em graus decimais. No RS, latitude e longitude normalmente são negativas.</div>
+  <div class="actions"><button id="cancelLocationBtn" class="secondary">Cancelar</button> <button id="saveLocationBtn" class="primary">Salvar</button></div>
+</div></div>
+
+<!-- TRIAL MODAL -->
+<div id="trialModal" class="modal"><div class="modal-card">
+  <h2 id="trialModalTitle">Novo ensaio</h2>
+  <div class="formgrid">
+    <div class="field"><label>ENSAIO ID</label><input id="trialId"></div>
+    <div class="field"><label>NOME</label><input id="trialName" placeholder="VCU 2026"></div>
+    <div class="field"><label>TIPO</label><input id="trialType" placeholder="VCU"></div>
+    <div class="field"><label>ANO</label><input id="trialYear" type="number" value="2026"></div>
+    <div class="field"><label>LOCAL</label><select id="trialLocation"></select></div>
+    <div class="field"><label>Nº PARCELAS</label><input id="trialPlots" type="number" min="0"></div>
+    <div class="field"><label>DATA SEMEADURA</label><input id="trialSowing" type="date"></div>
+    <div class="field"><label>COLHEITA PREVISTA</label><input id="trialHarvest" type="date"></div>
+    <div class="field"><label>RESPONSÁVEL</label><input id="trialResponsible"></div>
+    <div class="field"><label>STATUS</label><select id="trialStatus"><option>Em dia</option><option>Atenção</option><option>Atrasado</option><option>Concluído</option></select></div>
+  </div>
+  <div class="actions"><button id="cancelTrialBtn" class="secondary">Cancelar</button> <button id="saveTrialBtn" class="primary">Salvar</button></div>
+</div></div>
+
 <div id="toast" class="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-const firebaseConfig={apiKey:"AIzaSyA9qYtxNpXoVgV85SfTmOPYBLkuK2x6Sa8",authDomain:"rede-de-ensaios---rs.firebaseapp.com",projectId:"rede-de-ensaios---rs",storageBucket:"rede-de-ensaios---rs.firebasestorage.app",messagingSenderId:"845230162241",appId:"1:845230162241:web:1b6d2d527e065e36f121c0",measurementId:"G-H4TPRJDWT2"};
-const fbApp=initializeApp(firebaseConfig),auth=getAuth(fbApp),db=getFirestore(fbApp);auth.useDeviceLanguage();const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:"select_account"});let currentUser=null;const $=id=>document.getElementById(id);
-$("googleBtn").onclick=async()=>{ $("loginStatus").textContent="Abrindo login Google..."; try{await signInWithPopup(auth,provider);$("loginStatus").textContent=""}catch(e){console.error(e);const m={"auth/popup-closed-by-user":"Login cancelado.","auth/popup-blocked":"O navegador bloqueou o pop-up.","auth/unauthorized-domain":"Este domínio não está autorizado no Firebase.","auth/network-request-failed":"Falha de conexão."};$("loginStatus").textContent=m[e.code]||("Erro: "+e.code)}};
-$("logoutBtn").onclick=()=>signOut(auth);$("deniedLogoutBtn").onclick=()=>signOut(auth);
-onAuthStateChanged(auth,async user=>{currentUser=user;if(!user){showLogin();return;}try{const snap=await getDoc(doc(db,"usuarios",user.uid));if(!snap.exists()){showDenied("Sua conta Google autenticou, mas não está cadastrada como usuário autorizado.");return;}const data=snap.data();if(data.ativo!==true){showDenied("Seu usuário está cadastrado, porém está inativo.");return;}showApp();renderUser(user,data);await loadActivities();}catch(e){console.error(e);showDenied("Não foi possível validar seu acesso no Firestore. Código: "+(e.code||"erro"));}});
-function showLogin(){$("loginScreen").classList.remove("hidden");$("deniedScreen").classList.add("hidden");$("app").classList.add("hidden")}function showDenied(msg){$("loginScreen").classList.add("hidden");$("deniedScreen").classList.remove("hidden");$("app").classList.add("hidden");$("deniedMsg").textContent=msg}function showApp(){$("loginScreen").classList.add("hidden");$("deniedScreen").classList.add("hidden");$("app").classList.remove("hidden")}
-function renderUser(u,data){const name=data.nome||u.displayName||"Usuário",email=data.email||u.email||"";$("userName").textContent=name;$("userEmail").textContent=email;$("profileBadge").textContent=data.perfil||"usuario";$("avatar").innerHTML=u.photoURL?'<img src="'+u.photoURL+'" alt="foto">':name.slice(0,1).toUpperCase();$("sessionInfo").innerHTML="<b>"+esc(name)+"</b><br>"+esc(email)+"<br>Perfil: <b>"+esc(data.perfil||"usuario")+"</b><br><small>UID: "+esc(u.uid)+"</small>";$("uName").textContent=name;$("uEmail").textContent=email;$("uProfile").textContent=data.perfil||"usuario";$("uUid").textContent=u.uid;$("audit").textContent="Será registrado por: "+name+" • "+email+" • UID "+u.uid;}
-const titles={overview:"Visão Geral da Rede",planning:"Planejamento",management:"Manejo Realizado",users:"Usuários"};document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));$(b.dataset.page).classList.add("active");$("title").textContent=titles[b.dataset.page];if(b.dataset.page==="management")loadActivities();});
-$("newActivity").onclick=()=>{$("activityTrialId").value=$("trialId").value.trim()||"VCU-PF-2026";$("date").value=new Date().toISOString().slice(0,10);$("modal").classList.add("show")};$("cancel").onclick=()=>$("modal").classList.remove("show");$("reloadBtn").onclick=loadActivities;
-$("save").onclick=async()=>{if(!currentUser)return;const ensaioId=$("activityTrialId").value.trim(),data=$("date").value;if(!ensaioId||!data){toast("Informe ensaioId e data.");return;}const payload={ensaioId,data,atividade:$("type").value,produto:$("product").value.trim()||"",dose:$("dose").value.trim()||"",observacao:$("obs").value.trim()||"",registradoPorUid:currentUser.uid,registradoPorNome:currentUser.displayName||currentUser.email||"",registradoPorEmail:currentUser.email||"",criadoEm:serverTimestamp()};try{await addDoc(collection(db,"atividades"),payload);$("modal").classList.remove("show");toast("✓ Atividade salva no Firestore");$("trialId").value=ensaioId;$("product").value="";$("dose").value="";$("obs").value="";await loadActivities();}catch(e){console.error(e);toast("Erro ao salvar: "+(e.code||"erro"));}};
-async function loadActivities(){if(!currentUser)return;const ensaioId=$("trialId").value.trim(),tbody=$("history").querySelector("tbody");tbody.innerHTML="";$("emptyState").textContent="Carregando...";try{const q=ensaioId?query(collection(db,"atividades"),where("ensaioId","==",ensaioId)):query(collection(db,"atividades"));const snap=await getDocs(q),rows=[];snap.forEach(d=>rows.push(d.data()));rows.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));for(const x of rows){const tr=document.createElement("tr"),date=x.data?new Date(x.data+"T12:00:00").toLocaleDateString("pt-BR"):"";[date,x.atividade||"",x.produto||"—",x.dose||"—",x.registradoPorNome||x.registradoPorEmail||"",x.observacao||"—"].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td)});tbody.appendChild(tr);}$("emptyState").textContent=rows.length?rows.length+" atividade(s) encontrada(s).":"Nenhuma atividade cadastrada ainda.";}catch(e){console.error(e);$("emptyState").textContent="Erro ao carregar atividades: "+(e.code||"erro");}}
-function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600)}function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+import {
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs,
+  query, where, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyA9qYtxNpXoVgV85SfTmOPYBLkuK2x6Sa8",
+  authDomain:"rede-de-ensaios---rs.firebaseapp.com",
+  projectId:"rede-de-ensaios---rs",
+  storageBucket:"rede-de-ensaios---rs.firebasestorage.app",
+  messagingSenderId:"845230162241",
+  appId:"1:845230162241:web:1b6d2d527e065e36f121c0",
+  measurementId:"G-H4TPRJDWT2"
+};
+
+const fbApp=initializeApp(firebaseConfig);
+const auth=getAuth(fbApp);
+const db=getFirestore(fbApp);
+auth.useDeviceLanguage();
+const provider=new GoogleAuthProvider();
+provider.setCustomParameters({prompt:"select_account"});
+
+let currentUser=null;
+let accessProfile=null;
+let locations=[];
+let trials=[];
+let activities=[];
+let mainMap=null;
+let overviewMap=null;
+let mapLayer=L.layerGroup();
+let overviewLayer=L.layerGroup();
+let editingLocationId=null;
+let editingTrialId=null;
+const $=id=>document.getElementById(id);
+
+/* AUTH */
+$("googleBtn").onclick=async()=>{
+  $("loginStatus").textContent="Abrindo login Google...";
+  try{await signInWithPopup(auth,provider);$("loginStatus").textContent=""}
+  catch(e){console.error(e);$("loginStatus").textContent="Erro: "+(e.code||"login");}
+};
+$("logoutBtn").onclick=()=>signOut(auth);
+$("deniedLogoutBtn").onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  currentUser=user;
+  if(!user){showLogin();return;}
+  try{
+    const snap=await getDoc(doc(db,"usuarios",user.uid));
+    if(!snap.exists()){showDenied("Sua conta não está cadastrada na coleção usuarios.");return;}
+    const data=snap.data();
+    if(data.ativo!==true){showDenied("Seu usuário está inativo.");return;}
+    accessProfile=data.perfil||"usuario";
+    showApp(); renderUser(user,data); applyPermissions();
+    await reloadAll();
+  }catch(e){console.error(e);showDenied("Não foi possível validar o acesso: "+(e.code||"erro"));}
+});
+
+function showLogin(){$("loginScreen").classList.remove("hidden");$("deniedScreen").classList.add("hidden");$("app").classList.add("hidden")}
+function showDenied(msg){$("loginScreen").classList.add("hidden");$("deniedScreen").classList.remove("hidden");$("app").classList.add("hidden");$("deniedMsg").textContent=msg}
+function showApp(){$("loginScreen").classList.add("hidden");$("deniedScreen").classList.add("hidden");$("app").classList.remove("hidden")}
+function renderUser(u,data){
+  const name=data.nome||u.displayName||"Usuário", email=data.email||u.email||"";
+  $("userName").textContent=name;$("userEmail").textContent=email;$("profileBadge").textContent=data.perfil||"usuario";
+  $("avatar").innerHTML=u.photoURL?'<img src="'+u.photoURL+'" alt="foto">':name.slice(0,1).toUpperCase();
+}
+function applyPermissions(){
+  if(accessProfile!=="admin") document.querySelectorAll(".admin-only").forEach(x=>x.classList.add("hidden-admin"));
+}
+
+/* NAV */
+const titles={overview:"Visão Geral da Rede",mapPage:"Mapa Real",locations:"Locais",trials:"Ensaios",management:"Manejo Realizado"};
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active")); $(b.dataset.page).classList.add("active");
+  $("title").textContent=titles[b.dataset.page];
+  if(b.dataset.page==="mapPage") setTimeout(()=>{ensureMainMap();renderMainMap();mainMap.invalidateSize()},50);
+  if(b.dataset.page==="overview") setTimeout(()=>{ensureOverviewMap();renderOverviewMap();overviewMap.invalidateSize()},50);
+});
+
+/* DATA LOAD */
+async function reloadAll(){
+  await Promise.all([loadLocations(),loadTrials(),loadActivities()]);
+  renderAll();
+}
+async function loadLocations(){
+  const s=await getDocs(collection(db,"locais"));
+  locations=[];s.forEach(d=>locations.push({id:d.id,...d.data()}));
+  locations.sort((a,b)=>(a.nome||a.id).localeCompare(b.nome||b.id));
+}
+async function loadTrials(){
+  const s=await getDocs(collection(db,"ensaios"));
+  trials=[];s.forEach(d=>trials.push({id:d.id,...d.data()}));
+  trials.sort((a,b)=>(a.nome||a.id).localeCompare(b.nome||b.id));
+}
+async function loadActivities(){
+  const s=await getDocs(collection(db,"atividades"));
+  activities=[];s.forEach(d=>activities.push({id:d.id,...d.data()}));
+}
+function renderAll(){
+  renderKPIs();renderLocationsTable();renderTrialsTable();renderActivitiesTable();
+  populateLocationSelect();populateTrialFilters();populateMapFilters();
+  ensureOverviewMap();renderOverviewMap();
+  if(mainMap) renderMainMap();
+}
+function locById(id){return locations.find(x=>x.id===id)}
+function trialById(id){return trials.find(x=>x.id===id)}
+
+/* KPIs */
+function renderKPIs(){
+  $("kpiLocations").textContent=locations.length;
+  $("kpiTrials").textContent=trials.length;
+  $("kpiPlots").textContent=trials.reduce((s,x)=>s+(Number(x.n_parcelas)||0),0).toLocaleString("pt-BR");
+  $("kpiGeo").textContent=locations.filter(x=>isFinite(Number(x.latitude))&&isFinite(Number(x.longitude))).length;
+  $("kpiActivities").textContent=activities.length;
+  const missing=locations.filter(x=>!isFinite(Number(x.latitude))||!isFinite(Number(x.longitude))).length;
+  $("overviewSummary").innerHTML=
+    `<b>${locations.length}</b> local(is) cadastrado(s)<br>`+
+    `<b>${trials.length}</b> ensaio(s)<br>`+
+    `<b>${missing}</b> local(is) sem coordenadas válidas<br>`+
+    `<b>${activities.length}</b> atividade(s) registrada(s)`;
+}
+
+/* MAPS */
+function ensureMainMap(){
+  if(mainMap) return;
+  mainMap=L.map("map").setView([-30.0,-53.5],6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(mainMap);
+  mapLayer.addTo(mainMap);
+}
+function ensureOverviewMap(){
+  if(overviewMap) return;
+  overviewMap=L.map("mapOverview",{zoomControl:false}).setView([-30.0,-53.5],6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"&copy; OpenStreetMap"}).addTo(overviewMap);
+  overviewLayer.addTo(overviewMap);
+}
+function statusColor(status){
+  if(status==="Atrasado") return "#c94b4b";
+  if(status==="Atenção") return "#d59a19";
+  return "#208a57";
+}
+function markerForLocation(loc, targetLayer){
+  const related=trials.filter(t=>t.local_id===loc.id);
+  const worst=related.some(t=>t.status==="Atrasado")?"Atrasado":related.some(t=>t.status==="Atenção")?"Atenção":"Em dia";
+  const lat=Number(loc.latitude),lng=Number(loc.longitude);
+  if(!isFinite(lat)||!isFinite(lng))return;
+  const plots=related.reduce((s,t)=>s+(Number(t.n_parcelas)||0),0);
+  const radius=Math.max(7,Math.min(18,7+Math.sqrt(Math.max(plots,1))/5));
+  const marker=L.circleMarker([lat,lng],{radius,color:"#fff",weight:2,fillColor:statusColor(worst),fillOpacity:.9});
+  marker.bindPopup(`<b>${esc(loc.nome||loc.id)}</b><br>${esc(loc.municipio||"")}<br><br><b>${related.length}</b> ensaio(s)<br><b>${plots}</b> parcela(s)<br>Status: ${worst}`);
+  marker.addTo(targetLayer);
+}
+function renderOverviewMap(){
+  if(!overviewMap)return; overviewLayer.clearLayers();locations.forEach(l=>markerForLocation(l,overviewLayer));
+}
+function renderMainMap(){
+  ensureMainMap();mapLayer.clearLayers();
+  const status=$("mapStatusFilter").value,type=$("mapTypeFilter").value;
+  const allowedLocIds=new Set(trials.filter(t=>(!status||t.status===status)&&(!type||t.tipo===type)).map(t=>t.local_id));
+  locations.filter(l=>allowedLocIds.size===0 || allowedLocIds.has(l.id)).forEach(l=>markerForLocation(l,mapLayer));
+}
+$("mapStatusFilter").onchange=renderMainMap;$("mapTypeFilter").onchange=renderMainMap;
+$("fitMapBtn").onclick=()=>{
+  ensureMainMap();
+  const pts=locations.filter(l=>isFinite(Number(l.latitude))&&isFinite(Number(l.longitude))).map(l=>[Number(l.latitude),Number(l.longitude)]);
+  if(pts.length) mainMap.fitBounds(pts,{padding:[30,30]});
+};
+
+/* LOCATIONS CRUD */
+function renderLocationsTable(){
+  const tb=$("locationsTable").querySelector("tbody");tb.innerHTML="";
+  for(const l of locations){
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${esc(l.id)}</td><td>${esc(l.nome||"")}</td><td>${esc(l.municipio||"")}</td><td>${num(l.latitude)}</td><td>${num(l.longitude)}</td><td>${esc(l.regiao||"")}</td><td></td>`;
+    const td=tr.lastElementChild;
+    if(accessProfile==="admin"){
+      const e=document.createElement("button");e.className="secondary";e.textContent="Editar";e.onclick=()=>openLocationModal(l);
+      const d=document.createElement("button");d.className="danger";d.textContent="Excluir";d.style.marginLeft="6px";d.onclick=()=>deleteLocation(l.id);
+      td.append(e,d);
+    }else td.textContent="—";
+    tb.appendChild(tr);
+  }
+}
+$("newLocationBtn").onclick=()=>openLocationModal(null);
+$("cancelLocationBtn").onclick=()=>$("locationModal").classList.remove("show");
+function openLocationModal(l){
+  editingLocationId=l?.id||null;$("locationModalTitle").textContent=l?"Editar local":"Novo local";
+  $("locId").value=l?.id||"";$("locId").disabled=!!l;
+  $("locName").value=l?.nome||"";$("locCity").value=l?.municipio||"";$("locRegion").value=l?.regiao||"";
+  $("locLat").value=l?.latitude??"";$("locLng").value=l?.longitude??"";$("locObs").value=l?.observacao||"";
+  $("locationModal").classList.add("show");
+}
+$("saveLocationBtn").onclick=async()=>{
+  if(accessProfile!=="admin")return;
+  const id=$("locId").value.trim(),nome=$("locName").value.trim();
+  const lat=parseFloat($("locLat").value),lng=parseFloat($("locLng").value);
+  if(!id||!nome){toast("Informe local_id e nome.");return}
+  if(!isFinite(lat)||!isFinite(lng)){toast("Latitude/longitude inválidas.");return}
+  const payload={nome,municipio:$("locCity").value.trim(),regiao:$("locRegion").value.trim(),latitude:lat,longitude:lng,observacao:$("locObs").value.trim(),atualizadoEm:serverTimestamp()};
+  try{await setDoc(doc(db,"locais",id),payload,{merge:true});$("locationModal").classList.remove("show");await loadLocations();renderAll();toast("✓ Local salvo")}
+  catch(e){console.error(e);toast("Erro ao salvar local: "+(e.code||"erro"))}
+};
+async function deleteLocation(id){
+  if(!confirm("Excluir o local "+id+"?"))return;
+  if(trials.some(t=>t.local_id===id)){toast("Não é possível excluir: existem ensaios vinculados.");return}
+  try{await deleteDoc(doc(db,"locais",id));await loadLocations();renderAll();toast("Local excluído")}
+  catch(e){toast("Erro ao excluir: "+(e.code||"erro"))}
+}
+
+/* TRIALS CRUD */
+function renderTrialsTable(){
+  const tb=$("trialsTable").querySelector("tbody");tb.innerHTML="";
+  for(const t of trials){
+    const l=locById(t.local_id);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${esc(t.id)}</td><td>${esc(t.nome||"")}</td><td>${esc(t.tipo||"")}</td><td>${esc(l?.nome||t.local_id||"")}</td><td>${Number(t.n_parcelas||0)}</td><td>${fmtDate(t.data_semeadura)}</td><td>${fmtDate(t.data_colheita_prevista)}</td><td><span class="tag ${t.status==="Atrasado"?"red":t.status==="Atenção"?"yellow":"green"}">${esc(t.status||"")}</span></td><td></td>`;
+    const td=tr.lastElementChild;
+    if(accessProfile==="admin"){
+      const e=document.createElement("button");e.className="secondary";e.textContent="Editar";e.onclick=()=>openTrialModal(t);
+      const d=document.createElement("button");d.className="danger";d.textContent="Excluir";d.style.marginLeft="6px";d.onclick=()=>deleteTrial(t.id);
+      td.append(e,d);
+    }else td.textContent="—";
+    tb.appendChild(tr);
+  }
+}
+$("newTrialBtn").onclick=()=>openTrialModal(null);
+$("cancelTrialBtn").onclick=()=>$("trialModal").classList.remove("show");
+function populateLocationSelect(){
+  $("trialLocation").innerHTML=locations.map(l=>`<option value="${escAttr(l.id)}">${esc(l.nome||l.id)}</option>`).join("");
+}
+function openTrialModal(t){
+  editingTrialId=t?.id||null;$("trialModalTitle").textContent=t?"Editar ensaio":"Novo ensaio";
+  $("trialId").value=t?.id||"";$("trialId").disabled=!!t;
+  $("trialName").value=t?.nome||"";$("trialType").value=t?.tipo||"";$("trialYear").value=t?.ano||2026;
+  $("trialLocation").value=t?.local_id||locations[0]?.id||"";$("trialPlots").value=t?.n_parcelas??"";
+  $("trialSowing").value=t?.data_semeadura||"";$("trialHarvest").value=t?.data_colheita_prevista||"";
+  $("trialResponsible").value=t?.responsavel||"";$("trialStatus").value=t?.status||"Em dia";
+  $("trialModal").classList.add("show");
+}
+$("saveTrialBtn").onclick=async()=>{
+  if(accessProfile!=="admin")return;
+  const id=$("trialId").value.trim(),nome=$("trialName").value.trim(),localId=$("trialLocation").value;
+  if(!id||!nome||!localId){toast("Informe ensaio_id, nome e local.");return}
+  const payload={nome,tipo:$("trialType").value.trim(),ano:Number($("trialYear").value)||null,local_id:localId,n_parcelas:Number($("trialPlots").value)||0,data_semeadura:$("trialSowing").value||"",data_colheita_prevista:$("trialHarvest").value||"",responsavel:$("trialResponsible").value.trim(),status:$("trialStatus").value,atualizadoEm:serverTimestamp()};
+  try{await setDoc(doc(db,"ensaios",id),payload,{merge:true});$("trialModal").classList.remove("show");await loadTrials();renderAll();toast("✓ Ensaio salvo")}
+  catch(e){console.error(e);toast("Erro ao salvar ensaio: "+(e.code||"erro"))}
+};
+async function deleteTrial(id){
+  if(!confirm("Excluir o ensaio "+id+"?"))return;
+  try{await deleteDoc(doc(db,"ensaios",id));await loadTrials();renderAll();toast("Ensaio excluído")}
+  catch(e){toast("Erro ao excluir: "+(e.code||"erro"))}
+}
+
+/* ACTIVITIES */
+function populateTrialFilters(){
+  const opts='<option value="">Todos os ensaios</option>'+trials.map(t=>`<option value="${escAttr(t.id)}">${esc(t.nome||t.id)}</option>`).join("");
+  $("activityTrialFilter").innerHTML=opts;
+}
+$("reloadActivitiesBtn").onclick=async()=>{await loadActivities();renderActivitiesTable()};
+$("activityTrialFilter").onchange=renderActivitiesTable;
+function renderActivitiesTable(){
+  const filter=$("activityTrialFilter").value;
+  const tb=$("activitiesTable").querySelector("tbody");tb.innerHTML="";
+  activities.filter(a=>!filter||a.ensaioId===filter).sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).forEach(a=>{
+    const t=trialById(a.ensaioId);
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${fmtDate(a.data)}</td><td>${esc(t?.nome||a.ensaioId||"")}</td><td>${esc(a.atividade||"")}</td><td>${esc(a.produto||"—")}</td><td>${esc(a.dose||"—")}</td><td>${esc(a.registradoPorNome||a.registradoPorEmail||"")}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+/* MAP FILTERS */
+function populateMapFilters(){
+  const types=[...new Set(trials.map(t=>t.tipo).filter(Boolean))].sort();
+  $("mapTypeFilter").innerHTML='<option value="">Todos os tipos</option>'+types.map(x=>`<option>${esc(x)}</option>`).join("");
+}
+
+/* CSV */
+function parseCsv(text){
+  const first=text.split(/\r?\n/).find(l=>l.trim())||"";
+  const sep=(first.split(";").length>first.split(",").length)?";":",";
+  const rows=[];let row=[],cell="",quoted=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],next=text[i+1];
+    if(ch=='"'){if(quoted&&next=='"'){cell+='"';i++}else quoted=!quoted}
+    else if(ch===sep&&!quoted){row.push(cell.trim());cell=""}
+    else if((ch==="\n"||ch==="\r")&&!quoted){if(ch==="\r"&&next==="\n")i++;row.push(cell.trim());cell="";if(row.some(x=>x!==""))rows.push(row);row=[]}
+    else cell+=ch;
+  }
+  if(cell||row.length){row.push(cell.trim());if(row.some(x=>x!==""))rows.push(row)}
+  if(rows.length<2)return[];
+  const headers=rows[0].map(h=>h.trim().toLowerCase());
+  return rows.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??""])));
+}
+function readFile(input){return new Promise((res,rej)=>{const f=input.files[0];if(!f)return rej(new Error("Selecione um arquivo."));const rd=new FileReader();rd.onload=()=>res(rd.result);rd.onerror=rej;rd.readAsText(f,"UTF-8")})}
+$("importLocationsBtn").onclick=async()=>{
+  try{
+    const rows=parseCsv(await readFile($("locationsCsv")));if(!rows.length){toast("CSV vazio ou inválido.");return}
+    let ok=0;
+    for(const r of rows){
+      const id=(r.local_id||r.id||"").trim();if(!id)continue;
+      const lat=parseFloat(String(r.latitude).replace(",", ".")),lng=parseFloat(String(r.longitude).replace(",", "."));
+      if(!isFinite(lat)||!isFinite(lng))continue;
+      await setDoc(doc(db,"locais",id),{nome:r.nome||r.local||id,municipio:r.municipio||"",regiao:r.regiao||"",latitude:lat,longitude:lng,atualizadoEm:serverTimestamp()},{merge:true});ok++;
+    }
+    await loadLocations();renderAll();toast(`✓ ${ok} local(is) importado(s)`);
+  }catch(e){console.error(e);toast("Erro no CSV: "+e.message)}
+};
+$("importTrialsBtn").onclick=async()=>{
+  try{
+    const rows=parseCsv(await readFile($("trialsCsv")));if(!rows.length){toast("CSV vazio ou inválido.");return}
+    let ok=0;
+    for(const r of rows){
+      const id=(r.ensaio_id||r.id||"").trim();if(!id)continue;
+      const localId=(r.local_id||"").trim();if(!localId)continue;
+      await setDoc(doc(db,"ensaios",id),{nome:r.nome||id,tipo:r.tipo||"",ano:Number(r.ano)||null,local_id:localId,n_parcelas:Number(r.n_parcelas)||0,data_semeadura:r.data_semeadura||"",data_colheita_prevista:r.data_colheita_prevista||"",responsavel:r.responsavel||"",status:r.status||"Em dia",atualizadoEm:serverTimestamp()},{merge:true});ok++;
+    }
+    await loadTrials();renderAll();toast(`✓ ${ok} ensaio(s) importado(s)`);
+  }catch(e){console.error(e);toast("Erro no CSV: "+e.message)}
+};
+$("downloadLocationsTemplateBtn").onclick=()=>downloadText("modelo_locais.csv","local_id,nome,municipio,latitude,longitude,regiao\nPF-01,Passo Fundo - Area 1,Passo Fundo,-28.2628,-52.4068,Norte\n");
+$("downloadTrialsTemplateBtn").onclick=()=>downloadText("modelo_ensaios.csv","ensaio_id,nome,tipo,ano,local_id,n_parcelas,data_semeadura,data_colheita_prevista,responsavel,status\nVCU-PF-2026,VCU 2026,VCU,2026,PF-01,320,2026-06-18,2026-10-25,Joao,Em dia\n");
+function downloadText(name,text){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+
+/* UTILS */
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function escAttr(s){return esc(s)}
+function fmtDate(s){if(!s)return"";const d=new Date(String(s)+"T12:00:00");return isNaN(d)?esc(s):d.toLocaleDateString("pt-BR")}
+function num(x){const n=Number(x);return isFinite(n)?n.toFixed(6):""}
 </script>
-</body></html>
+</body>
+</html>
