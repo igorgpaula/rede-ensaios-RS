@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Rede de Ensaios RS — V6</title>
+<title>Rede de Ensaios RS — V6.1</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
  integrity="sha256-p4NxAoJBhIINfQ3yn5/NdODNseJPQwz1I8QXvrY5f9A=" crossorigin=""/>
@@ -124,7 +124,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 
 <section class="page active" id="overview">
   <h1>Visão geral da rede</h1>
-  <div class="sub">V6 conectada ao Firestore, com cadastro real de locais e ensaios</div>
+  <div class="sub">V6.1 conectada ao Firestore, com mapa Leaflet corrigido</div>
   <div class="cards">
     <div class="card"><div class="label">LOCAIS</div><div class="value" id="kpiLocations">0</div></div>
     <div class="card"><div class="label">ENSAIOS</div><div class="value" id="kpiTrials">0</div></div>
@@ -347,8 +347,20 @@ document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active")); $(b.dataset.page).classList.add("active");
   $("title").textContent=titles[b.dataset.page];
-  if(b.dataset.page==="mapPage") setTimeout(()=>{ensureMainMap();renderMainMap();mainMap.invalidateSize()},50);
-  if(b.dataset.page==="overview") setTimeout(()=>{ensureOverviewMap();renderOverviewMap();overviewMap.invalidateSize()},50);
+  if(b.dataset.page==="mapPage"){
+    setTimeout(()=>{
+      ensureMainMap();
+      renderMainMap();
+      invalidateLeafletMap(mainMap,120);
+    },80);
+  }
+  if(b.dataset.page==="overview"){
+    setTimeout(()=>{
+      ensureOverviewMap();
+      renderOverviewMap();
+      invalidateLeafletMap(overviewMap,120);
+    },80);
+  }
 });
 
 /* DATA LOAD */
@@ -371,10 +383,23 @@ async function loadActivities(){
   activities=[];s.forEach(d=>activities.push({id:d.id,...d.data()}));
 }
 function renderAll(){
-  renderKPIs();renderLocationsTable();renderTrialsTable();renderActivitiesTable();
-  populateLocationSelect();populateTrialFilters();populateMapFilters();
-  ensureOverviewMap();renderOverviewMap();
+  renderKPIs();
+  renderLocationsTable();
+  renderTrialsTable();
+  renderActivitiesTable();
+  populateLocationSelect();
+  populateTrialFilters();
+  populateMapFilters();
+
+  ensureOverviewMap();
+  renderOverviewMap();
+
   if(mainMap) renderMainMap();
+
+  // Important for GitHub Pages/mobile/browser zoom: recalculate Leaflet canvas size
+  // after the DOM/layout has fully settled.
+  invalidateLeafletMap(overviewMap,250);
+  invalidateLeafletMap(mainMap,250);
 }
 function locById(id){return locations.find(x=>x.id===id)}
 function trialById(id){return trials.find(x=>x.id===id)}
@@ -395,17 +420,33 @@ function renderKPIs(){
 }
 
 /* MAPS */
+function invalidateLeafletMap(mapObj, delay=150){
+  if(!mapObj) return;
+  setTimeout(()=>{
+    mapObj.invalidateSize(true);
+  },delay);
+}
+
 function ensureMainMap(){
   if(mainMap) return;
   mainMap=L.map("map").setView([-30.0,-53.5],6);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"&copy; OpenStreetMap"}).addTo(mainMap);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    maxZoom:19,
+    attribution:"&copy; OpenStreetMap"
+  }).addTo(mainMap);
   mapLayer.addTo(mainMap);
+  invalidateLeafletMap(mainMap,200);
 }
+
 function ensureOverviewMap(){
   if(overviewMap) return;
   overviewMap=L.map("mapOverview",{zoomControl:false}).setView([-30.0,-53.5],6);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:"&copy; OpenStreetMap"}).addTo(overviewMap);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    maxZoom:18,
+    attribution:"&copy; OpenStreetMap"
+  }).addTo(overviewMap);
   overviewLayer.addTo(overviewMap);
+  invalidateLeafletMap(overviewMap,250);
 }
 function statusColor(status){
   if(status==="Atrasado") return "#c94b4b";
@@ -423,14 +464,55 @@ function markerForLocation(loc, targetLayer){
   marker.bindPopup(`<b>${esc(loc.nome||loc.id)}</b><br>${esc(loc.municipio||"")}<br><br><b>${related.length}</b> ensaio(s)<br><b>${plots}</b> parcela(s)<br>Status: ${worst}`);
   marker.addTo(targetLayer);
 }
-function renderOverviewMap(){
-  if(!overviewMap)return; overviewLayer.clearLayers();locations.forEach(l=>markerForLocation(l,overviewLayer));
+function validGeoLocations(list=locations){
+  return list.filter(l=>isFinite(Number(l.latitude))&&isFinite(Number(l.longitude)));
 }
+
+function renderOverviewMap(){
+  if(!overviewMap)return;
+  overviewLayer.clearLayers();
+  const valid=validGeoLocations();
+  valid.forEach(l=>markerForLocation(l,overviewLayer));
+
+  if(valid.length){
+    const pts=valid.map(l=>[Number(l.latitude),Number(l.longitude)]);
+    overviewMap.fitBounds(pts,{padding:[24,24],maxZoom:9});
+  }else{
+    overviewMap.setView([-30.0,-53.5],6);
+  }
+  invalidateLeafletMap(overviewMap,100);
+}
+
 function renderMainMap(){
-  ensureMainMap();mapLayer.clearLayers();
-  const status=$("mapStatusFilter").value,type=$("mapTypeFilter").value;
-  const allowedLocIds=new Set(trials.filter(t=>(!status||t.status===status)&&(!type||t.tipo===type)).map(t=>t.local_id));
-  locations.filter(l=>allowedLocIds.size===0 || allowedLocIds.has(l.id)).forEach(l=>markerForLocation(l,mapLayer));
+  ensureMainMap();
+  mapLayer.clearLayers();
+
+  const status=$("mapStatusFilter").value;
+  const type=$("mapTypeFilter").value;
+
+  const filteredTrials=trials.filter(t=>
+    (!status||t.status===status) &&
+    (!type||t.tipo===type)
+  );
+
+  const allowedLocIds=new Set(filteredTrials.map(t=>t.local_id));
+  let locs=locations;
+
+  // If a filter is active, show only locations with matching trials.
+  if(status || type){
+    locs=locations.filter(l=>allowedLocIds.has(l.id));
+  }
+
+  const valid=validGeoLocations(locs);
+  valid.forEach(l=>markerForLocation(l,mapLayer));
+
+  if(valid.length){
+    const pts=valid.map(l=>[Number(l.latitude),Number(l.longitude)]);
+    mainMap.fitBounds(pts,{padding:[30,30],maxZoom:10});
+  }else{
+    mainMap.setView([-30.0,-53.5],6);
+  }
+  invalidateLeafletMap(mainMap,100);
 }
 $("mapStatusFilter").onchange=renderMainMap;$("mapTypeFilter").onchange=renderMainMap;
 $("fitMapBtn").onclick=()=>{
@@ -601,6 +683,16 @@ function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&l
 function escAttr(s){return esc(s)}
 function fmtDate(s){if(!s)return"";const d=new Date(String(s)+"T12:00:00");return isNaN(d)?esc(s):d.toLocaleDateString("pt-BR")}
 function num(x){const n=Number(x);return isFinite(n)?n.toFixed(6):""}
+
+// Recalculate map dimensions whenever the browser viewport changes.
+window.addEventListener("resize",()=>{
+  invalidateLeafletMap(overviewMap,100);
+  invalidateLeafletMap(mainMap,100);
+});
+window.addEventListener("orientationchange",()=>{
+  invalidateLeafletMap(overviewMap,250);
+  invalidateLeafletMap(mainMap,250);
+});
 </script>
 </body>
 </html>
