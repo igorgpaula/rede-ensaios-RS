@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Rede de Ensaios RS — V6.2</title>
+<title>Rede de Ensaios RS — V6.3</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -198,6 +198,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
     <button data-page="locations">📍 Locais</button>
     <button data-page="trials">🔬 Ensaios</button>
     <button data-page="management">📝 Manejo</button>
+    <button data-page="users">👥 Usuários</button>
   </div>
   <div class="userbox">
     <div class="avatar" id="avatar">U</div>
@@ -215,7 +216,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 
 <section class="page active" id="overview">
   <h1>Visão geral da rede</h1>
-  <div class="sub">V6.2 conectada ao Firestore, com CSS Leaflet incorporado</div>
+  <div class="sub">V6.3 com gestão de usuários dentro da plataforma</div>
   <div class="cards">
     <div class="card"><div class="label">LOCAIS</div><div class="value" id="kpiLocations">0</div></div>
     <div class="card"><div class="label">ENSAIOS</div><div class="value" id="kpiTrials">0</div></div>
@@ -316,6 +317,25 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
   </div>
 </section>
 
+
+<section class="page" id="users">
+  <h1>Usuários</h1>
+  <div class="sub">Gestão de acessos da plataforma</div>
+  <div class="toolbar">
+    <div class="help">Administradores podem criar, editar, ativar/desativar e remover acessos.</div>
+    <button id="newUserBtn" class="primary admin-only">＋ Novo usuário</button>
+  </div>
+  <div class="panel">
+    <table class="table" id="usersTable">
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>UID</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="audit">
+    Cadastre o usuário pelo e-mail antes do primeiro acesso. No primeiro login Google, a plataforma vincula automaticamente o UID ao cadastro.
+  </div>
+</section>
+
 </div>
 </main>
 </div>
@@ -354,6 +374,30 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
   <div class="actions"><button id="cancelTrialBtn" class="secondary">Cancelar</button> <button id="saveTrialBtn" class="primary">Salvar</button></div>
 </div></div>
 
+
+<!-- USER MODAL -->
+<div id="userModal" class="modal"><div class="modal-card">
+  <h2 id="userModalTitle">Novo usuário</h2>
+  <div class="formgrid">
+    <div class="field"><label>NOME</label><input id="usrName" placeholder="Nome completo"></div>
+    <div class="field"><label>E-MAIL</label><input id="usrEmail" type="email" placeholder="usuario@empresa.com"></div>
+    <div class="field"><label>PERFIL</label>
+      <select id="usrProfile">
+        <option value="admin">Administrador</option>
+        <option value="pesquisador">Pesquisador</option>
+        <option value="campo">Campo</option>
+        <option value="visualizacao">Visualização</option>
+      </select>
+    </div>
+    <div class="field"><label>STATUS</label>
+      <select id="usrActive"><option value="true">Ativo</option><option value="false">Inativo</option></select>
+    </div>
+    <div class="field full"><label>UID FIREBASE</label><input id="usrUid" placeholder="Opcional; pode ser associado no primeiro login"></div>
+  </div>
+  <div class="audit">Se o UID estiver vazio, o sistema usa o e-mail para localizar o pré-cadastro e associa o UID no primeiro login.</div>
+  <div class="actions"><button id="cancelUserBtn" class="secondary">Cancelar</button> <button id="saveUserBtn" class="primary">Salvar</button></div>
+</div></div>
+
 <div id="toast" class="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -388,12 +432,14 @@ let accessProfile=null;
 let locations=[];
 let trials=[];
 let activities=[];
+let users=[];
 let mainMap=null;
 let overviewMap=null;
 let mapLayer=L.layerGroup();
 let overviewLayer=L.layerGroup();
 let editingLocationId=null;
 let editingTrialId=null;
+let editingUserDocId=null;
 const $=id=>document.getElementById(id);
 
 /* AUTH */
@@ -409,9 +455,26 @@ onAuthStateChanged(auth,async user=>{
   currentUser=user;
   if(!user){showLogin();return;}
   try{
-    const snap=await getDoc(doc(db,"usuarios",user.uid));
-    if(!snap.exists()){showDenied("Sua conta não está cadastrada na coleção usuarios.");return;}
-    const data=snap.data();
+    let snap=await getDoc(doc(db,"usuarios",user.uid));
+    let data=null;
+
+    if(snap.exists()){
+      data=snap.data();
+    }else{
+      const email=(user.email||"").trim().toLowerCase();
+      const qs=await getDocs(query(collection(db,"usuarios"),where("email_normalizado","==",email)));
+      if(qs.empty){showDenied("Sua conta Google autenticou, mas seu e-mail não está autorizado.");return;}
+
+      const pre=qs.docs[0];
+      data=pre.data();
+      if(data.ativo!==true){showDenied("Seu usuário está cadastrado, porém está inativo.");return;}
+
+      const linked={...data,uid:user.uid,atualizadoEm:serverTimestamp()};
+      await setDoc(doc(db,"usuarios",user.uid),linked,{merge:true});
+      if(pre.id!==user.uid){try{await deleteDoc(doc(db,"usuarios",pre.id));}catch(_){}}
+      data=linked;
+    }
+
     if(data.ativo!==true){showDenied("Seu usuário está inativo.");return;}
     accessProfile=data.perfil||"usuario";
     showApp(); renderUser(user,data); applyPermissions();
@@ -432,7 +495,7 @@ function applyPermissions(){
 }
 
 /* NAV */
-const titles={overview:"Visão Geral da Rede",mapPage:"Mapa Real",locations:"Locais",trials:"Ensaios",management:"Manejo Realizado"};
+const titles={overview:"Visão Geral da Rede",mapPage:"Mapa Real",locations:"Locais",trials:"Ensaios",management:"Manejo Realizado",users:"Usuários"};
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active")); b.classList.add("active");
   document.querySelectorAll(".page").forEach(x=>x.classList.remove("active")); $(b.dataset.page).classList.add("active");
@@ -455,7 +518,7 @@ document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>{
 
 /* DATA LOAD */
 async function reloadAll(){
-  await Promise.all([loadLocations(),loadTrials(),loadActivities()]);
+  await Promise.all([loadLocations(),loadTrials(),loadActivities(),loadUsers()]);
   renderAll();
 }
 async function loadLocations(){
@@ -472,11 +535,18 @@ async function loadActivities(){
   const s=await getDocs(collection(db,"atividades"));
   activities=[];s.forEach(d=>activities.push({id:d.id,...d.data()}));
 }
+async function loadUsers(){
+  if(accessProfile!=="admin"){users=[];return;}
+  const s=await getDocs(collection(db,"usuarios"));
+  users=[];s.forEach(d=>users.push({id:d.id,...d.data()}));
+  users.sort((a,b)=>(a.nome||a.email||a.id).localeCompare(b.nome||b.email||b.id));
+}
 function renderAll(){
   renderKPIs();
   renderLocationsTable();
   renderTrialsTable();
   renderActivitiesTable();
+  renderUsersTable();
   populateLocationSelect();
   populateTrialFilters();
   populateMapFilters();
@@ -712,6 +782,113 @@ function renderActivitiesTable(){
     tr.innerHTML=`<td>${fmtDate(a.data)}</td><td>${esc(t?.nome||a.ensaioId||"")}</td><td>${esc(a.atividade||"")}</td><td>${esc(a.produto||"—")}</td><td>${esc(a.dose||"—")}</td><td>${esc(a.registradoPorNome||a.registradoPorEmail||"")}</td>`;
     tb.appendChild(tr);
   });
+}
+
+
+/* USERS CRUD */
+function renderUsersTable(){
+  const table=$("usersTable");
+  if(!table) return;
+  const tb=table.querySelector("tbody");
+  tb.innerHTML="";
+
+  if(accessProfile!=="admin"){
+    const tr=document.createElement("tr");
+    tr.innerHTML='<td colspan="6">Apenas administradores podem visualizar a lista completa de usuários.</td>';
+    tb.appendChild(tr);
+    return;
+  }
+
+  for(const u of users){
+    const tr=document.createElement("tr");
+    const active=u.ativo===true;
+    tr.innerHTML=`<td>${esc(u.nome||"")}</td><td>${esc(u.email||"")}</td><td>${esc(u.perfil||"")}</td><td><span class="tag ${active?"green":"red"}">${active?"Ativo":"Inativo"}</span></td><td>${esc(u.uid||u.id||"")}</td><td></td>`;
+    const td=tr.lastElementChild;
+
+    const editBtn=document.createElement("button");
+    editBtn.className="secondary"; editBtn.textContent="Editar";
+    editBtn.onclick=()=>openUserModal(u);
+
+    const toggleBtn=document.createElement("button");
+    toggleBtn.className=active?"danger":"primary";
+    toggleBtn.style.marginLeft="6px";
+    toggleBtn.textContent=active?"Desativar":"Ativar";
+    toggleBtn.onclick=()=>toggleUser(u);
+
+    const delBtn=document.createElement("button");
+    delBtn.className="danger"; delBtn.style.marginLeft="6px"; delBtn.textContent="Excluir";
+    delBtn.onclick=()=>deleteUser(u);
+
+    td.append(editBtn,toggleBtn,delBtn);
+    tb.appendChild(tr);
+  }
+}
+
+$("newUserBtn").onclick=()=>openUserModal(null);
+$("cancelUserBtn").onclick=()=>$("userModal").classList.remove("show");
+
+function openUserModal(u){
+  editingUserDocId=u?.id||null;
+  $("userModalTitle").textContent=u?"Editar usuário":"Novo usuário";
+  $("usrName").value=u?.nome||"";
+  $("usrEmail").value=u?.email||"";
+  $("usrProfile").value=u?.perfil||"campo";
+  $("usrActive").value=(u?.ativo===false)?"false":"true";
+  $("usrUid").value=u?.uid||((u?.id&&u.id.length>20)?u.id:"")||"";
+  $("userModal").classList.add("show");
+}
+
+$("saveUserBtn").onclick=async()=>{
+  if(accessProfile!=="admin") return;
+  const nome=$("usrName").value.trim();
+  const email=$("usrEmail").value.trim();
+  const emailNorm=email.toLowerCase();
+  const perfil=$("usrProfile").value;
+  const ativo=$("usrActive").value==="true";
+  const uid=$("usrUid").value.trim();
+
+  if(!nome||!email){toast("Informe nome e e-mail.");return}
+
+  const payload={nome,email,email_normalizado:emailNorm,perfil,ativo,uid:uid||"",atualizadoEm:serverTimestamp()};
+
+  try{
+    let docId;
+    if(uid) docId=uid;
+    else if(editingUserDocId) docId=editingUserDocId;
+    else docId="email_"+Math.random().toString(36).slice(2,12);
+
+    await setDoc(doc(db,"usuarios",docId),payload,{merge:true});
+    if(editingUserDocId && editingUserDocId!==docId){
+      try{await deleteDoc(doc(db,"usuarios",editingUserDocId));}catch(_){}
+    }
+
+    $("userModal").classList.remove("show");
+    await loadUsers(); renderUsersTable();
+    toast("✓ Usuário salvo");
+  }catch(e){
+    console.error(e); toast("Erro ao salvar usuário: "+(e.code||"erro"));
+  }
+};
+
+async function toggleUser(u){
+  if(accessProfile!=="admin") return;
+  if((u.uid||u.id)===currentUser?.uid && u.ativo===true){
+    if(!confirm("Você está prestes a desativar o próprio acesso. Continuar?")) return;
+  }
+  try{
+    await setDoc(doc(db,"usuarios",u.id),{ativo:!(u.ativo===true),atualizadoEm:serverTimestamp()},{merge:true});
+    await loadUsers(); renderUsersTable(); toast("Status atualizado");
+  }catch(e){console.error(e);toast("Erro ao atualizar usuário")}
+}
+
+async function deleteUser(u){
+  if(accessProfile!=="admin") return;
+  if((u.uid||u.id)===currentUser?.uid){toast("Não exclua o próprio administrador.");return}
+  if(!confirm("Excluir o acesso de "+(u.nome||u.email||u.id)+"?")) return;
+  try{
+    await deleteDoc(doc(db,"usuarios",u.id));
+    await loadUsers(); renderUsersTable(); toast("Usuário excluído");
+  }catch(e){console.error(e);toast("Erro ao excluir usuário")}
 }
 
 /* MAP FILTERS */
