@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14251e">
+<title>Rede RS Mobile — Manejo</title>
+<style>
+:root{
+  --bg:#f4f7f5;--card:#fff;--text:#17231e;--muted:#6f7d75;--line:#dfe7e2;
+  --green:#208a57;--green2:#176a43;--dark:#14251e;--red:#c94b4b;--yellow:#d59a19;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+.hidden{display:none!important}
+.screen{min-height:100vh}
+.login{display:grid;place-items:center;padding:24px;background:linear-gradient(160deg,#e7f0ea,#fafcfb)}
+.login-card{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:20px;padding:30px;text-align:center;box-shadow:0 18px 60px #17312618}
+.logo{font-size:52px}.login h1{font-size:24px;margin:8px 0 4px}.login p{font-size:13px;color:var(--muted);line-height:1.5}
+.google-btn{width:100%;padding:13px;margin-top:16px;border:1px solid #ccd7d0;background:#fff;border-radius:11px;font-weight:700}
+.login-status{min-height:18px;color:var(--red);font-size:12px;margin-top:10px}
+
+.app{min-height:100vh;padding-bottom:78px}
+.header{
+  position:sticky;top:0;z-index:10;background:var(--dark);color:#fff;padding:16px 16px 14px;
+  box-shadow:0 3px 12px #0002
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-weight:800;font-size:18px}.brand small{display:block;font-size:10px;color:#aec1b8;font-weight:500;margin-top:2px}
+.user{display:flex;align-items:center;gap:8px;min-width:0}.avatar{width:34px;height:34px;border-radius:50%;overflow:hidden;background:#dcebe3;color:#225b40;display:grid;place-items:center;font-weight:800}.avatar img{width:100%;height:100%;object-fit:cover}
+.usertext{min-width:0;text-align:right}.username{font-size:11px;font-weight:700;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.profile{font-size:9px;color:#aec1b8}
+.container{padding:14px;max-width:720px;margin:auto}
+
+.hero{background:linear-gradient(135deg,#1d342b,#24503e);color:#fff;border-radius:16px;padding:18px;margin-bottom:14px}
+.hero h2{margin:0 0 5px;font-size:20px}.hero p{margin:0;font-size:12px;color:#cfe0d7}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h3{font-size:13px;margin:0 0 10px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+.field label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+select,input,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--text)}
+textarea{min-height:92px;resize:vertical}
+.primary{width:100%;border:0;background:var(--green);color:#fff;padding:14px;border-radius:11px;font-weight:800;cursor:pointer}
+.primary:active{transform:scale(.99)}
+.secondary{border:1px solid var(--line);background:#fff;padding:10px 12px;border-radius:10px;cursor:pointer}
+.quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.quick{border:1px solid var(--line);background:#fff;border-radius:11px;padding:12px;text-align:left;font-weight:700;font-size:12px}
+.quick small{display:block;color:var(--muted);font-size:9px;font-weight:500;margin-top:3px}
+.quick.active{border-color:#7fb99a;background:#edf8f1;color:#17643f}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+.status{font-size:11px;color:var(--muted)}
+.history-item{padding:11px 0;border-bottom:1px solid var(--line)}.history-item:last-child{border-bottom:0}
+.history-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.history-title{font-size:13px;font-weight:800}.history-date{font-size:10px;color:var(--muted);white-space:nowrap}
+.history-meta{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.5}
+.empty{text-align:center;padding:24px 10px;color:var(--muted);font-size:12px}
+
+.bottom-nav{
+  position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);height:68px;
+  display:grid;grid-template-columns:repeat(3,1fr);z-index:20;padding-bottom:env(safe-area-inset-bottom)
+}
+.bottom-nav button{border:0;background:transparent;color:#718078;font-size:10px;font-weight:700}
+.bottom-nav button span{display:block;font-size:21px;margin-bottom:2px}.bottom-nav button.active{color:var(--green)}
+.page{display:none}.page.active{display:block}
+.toast{display:none;position:fixed;left:14px;right:14px;bottom:82px;background:#173328;color:#fff;padding:12px 14px;border-radius:10px;font-size:12px;z-index:30;text-align:center}.toast.show{display:block}
+.danger-note{background:#fdecec;color:#922f2f;border:1px solid #f2caca;border-radius:10px;padding:10px;font-size:11px}
+.success-note{background:#edf7f1;color:#17643f;border:1px solid #cce6d7;border-radius:10px;padding:10px;font-size:11px}
+@media(min-width:600px){
+  .quick-grid{grid-template-columns:repeat(4,1fr)}
+  .container{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="screen login">
+  <div class="login-card">
+    <div class="logo">🌾</div>
+    <h1>Rede de Ensaios RS</h1>
+    <p>Versão de campo para registro rápido de manejos</p>
+    <button id="googleBtn" class="google-btn">G &nbsp; Entrar com Google</button>
+    <div id="loginStatus" class="login-status"></div>
+  </div>
+</div>
+
+<div id="deniedScreen" class="screen login hidden">
+  <div class="login-card">
+    <div class="logo">🔒</div>
+    <h1>Acesso não autorizado</h1>
+    <p id="deniedMsg"></p>
+    <button id="deniedLogoutBtn" class="google-btn">Sair</button>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="header">
+    <div class="header-top">
+      <div class="brand">🌾 Rede RS<small>Campo / Manejo</small></div>
+      <div class="user">
+        <div class="usertext">
+          <div id="userName" class="username">Usuário</div>
+          <div id="userProfile" class="profile">perfil</div>
+        </div>
+        <div id="avatar" class="avatar">U</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <section id="pageHome" class="page active">
+      <div class="hero">
+        <h2>Registro rápido de manejo</h2>
+        <p>Selecione o local e o ensaio para registrar uma atividade em poucos toques.</p>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label>Local</label>
+          <select id="homeLocation"></select>
+        </div>
+        <div class="field">
+          <label>Ensaio</label>
+          <select id="homeTrial"></select>
+        </div>
+        <button id="startRegisterBtn" class="primary">＋ Registrar manejo</button>
+      </div>
+
+      <div class="card">
+        <h3>Atalhos</h3>
+        <div class="quick-grid">
+          <button class="quick" data-activity="Fungicida">💊 Fungicida<small>Aplicação</small></button>
+          <button class="quick" data-activity="Herbicida">🌿 Herbicida<small>Aplicação</small></button>
+          <button class="quick" data-activity="Adubação">🧪 Adubação<small>Cobertura/base</small></button>
+          <button class="quick" data-activity="Avaliação">🔬 Avaliação<small>Campo</small></button>
+          <button class="quick" data-activity="Inseticida">🐛 Inseticida<small>Aplicação</small></button>
+          <button class="quick" data-activity="Colheita">🌾 Colheita<small>Finalização</small></button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Últimos registros</h3>
+        <div id="homeHistory"></div>
+      </div>
+    </section>
+
+    <section id="pageRegister" class="page">
+      <div class="card">
+        <h3>Novo manejo</h3>
+
+        <div class="field">
+          <label>Local</label>
+          <select id="regLocation"></select>
+        </div>
+
+        <div class="field">
+          <label>Ensaio</label>
+          <select id="regTrial"></select>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Data</label>
+            <input id="regDate" type="date">
+          </div>
+          <div class="field">
+            <label>Atividade</label>
+            <select id="regActivity">
+              <option>Fungicida</option>
+              <option>Herbicida</option>
+              <option>Adubação</option>
+              <option>Inseticida</option>
+              <option>Avaliação</option>
+              <option>Semeadura</option>
+              <option>Emergência</option>
+              <option>Colheita</option>
+              <option>Outra</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Produto</label>
+          <input id="regProduct" placeholder="Ex.: Produto X">
+        </div>
+
+        <div class="field">
+          <label>Dose</label>
+          <input id="regDose" placeholder="Ex.: 0,6 L/ha">
+        </div>
+
+        <div class="field">
+          <label>Observação</label>
+          <textarea id="regObs" placeholder="Condições de campo, estádio, ocorrências..."></textarea>
+        </div>
+
+        <div id="auditBox" class="success-note" style="margin-bottom:12px"></div>
+
+        <button id="saveBtn" class="primary">✓ Salvar manejo</button>
+      </div>
+    </section>
+
+    <section id="pageHistory" class="page">
+      <div class="card">
+        <h3>Histórico</h3>
+        <div class="field">
+          <label>Ensaio</label>
+          <select id="historyTrial"></select>
+        </div>
+        <button id="refreshHistoryBtn" class="secondary" style="width:100%">↻ Atualizar</button>
+      </div>
+
+      <div class="card">
+        <div id="historyList"></div>
+      </div>
+
+      <div class="card">
+        <button id="logoutBtn" class="secondary" style="width:100%">Sair da conta</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="active" data-page="pageHome"><span>🏠</span>Início</button>
+    <button data-page="pageRegister"><span>＋</span>Registrar</button>
+    <button data-page="pageHistory"><span>📋</span>Histórico</button>
+  </nav>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyA9qYtxNpXoVgV85SfTmOPYBLkuK2x6Sa8",
+  authDomain:"rede-de-ensaios---rs.firebaseapp.com",
+  projectId:"rede-de-ensaios---rs",
+  storageBucket:"rede-de-ensaios---rs.firebasestorage.app",
+  messagingSenderId:"845230162241",
+  appId:"1:845230162241:web:1b6d2d527e065e36f121c0",
+  measurementId:"G-H4TPRJDWT2"
+};
+
+const fbApp=initializeApp(firebaseConfig);
+const auth=getAuth(fbApp);
+const db=getFirestore(fbApp);
+auth.useDeviceLanguage();
+const provider=new GoogleAuthProvider();
+provider.setCustomParameters({prompt:"select_account"});
+
+let currentUser=null;
+let userData=null;
+let locations=[];
+let trials=[];
+let activities=[];
+const $=id=>document.getElementById(id);
+
+$("googleBtn").onclick=async()=>{
+  $("loginStatus").textContent="Abrindo login Google...";
+  try{await signInWithPopup(auth,provider);$("loginStatus").textContent=""}
+  catch(e){console.error(e);$("loginStatus").textContent="Erro: "+(e.code||"login")}
+};
+
+$("logoutBtn").onclick=()=>signOut(auth);
+$("deniedLogoutBtn").onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async user=>{
+  currentUser=user;
+  if(!user){showLogin();return;}
+
+  try{
+    const snap=await getDoc(doc(db,"usuarios",user.uid));
+
+    if(!snap.exists()){
+      const email=(user.email||"").trim().toLowerCase();
+      const inviteSnap=await getDoc(doc(db,"convites",email));
+
+      if(!inviteSnap.exists()){
+        showDenied("Seu e-mail não está autorizado para acessar a plataforma.");
+        return;
+      }
+
+      const invite=inviteSnap.data();
+      if(invite.ativo!==true){
+        showDenied("Seu acesso está inativo.");
+        return;
+      }
+
+      userData={
+        nome:invite.nome||user.displayName||"",
+        email:user.email||email,
+        email_normalizado:email,
+        perfil:invite.perfil||"campo",
+        ativo:true,
+        uid:user.uid,
+        criadoEm:serverTimestamp(),
+        atualizadoEm:serverTimestamp()
+      };
+
+      await setDoc(doc(db,"usuarios",user.uid),userData);
+    }else{
+      userData=snap.data();
+    }
+
+    if(userData.ativo!==true){
+      showDenied("Seu acesso está inativo.");
+      return;
+    }
+
+    renderUser();
+    showApp();
+    await loadData();
+  }catch(e){
+    console.error(e);
+    showDenied("Não foi possível validar o acesso: "+(e.code||"erro"));
+  }
+});
+
+function showLogin(){
+  $("loginScreen").classList.remove("hidden");
+  $("deniedScreen").classList.add("hidden");
+  $("app").classList.add("hidden");
+}
+function showDenied(msg){
+  $("loginScreen").classList.add("hidden");
+  $("deniedScreen").classList.remove("hidden");
+  $("app").classList.add("hidden");
+  $("deniedMsg").textContent=msg;
+}
+function showApp(){
+  $("loginScreen").classList.add("hidden");
+  $("deniedScreen").classList.add("hidden");
+  $("app").classList.remove("hidden");
+}
+
+function renderUser(){
+  const name=userData?.nome||currentUser?.displayName||"Usuário";
+  $("userName").textContent=name;
+  $("userProfile").textContent=userData?.perfil||"usuario";
+  $("avatar").innerHTML=currentUser?.photoURL?'<img src="'+currentUser.photoURL+'" alt="foto">':name.slice(0,1).toUpperCase();
+  $("auditBox").textContent="Registrado por: "+name;
+}
+
+async function loadData(){
+  await Promise.all([loadLocations(),loadTrials(),loadActivities()]);
+  populateLocationSelectors();
+  populateHistoryTrial();
+  renderHistory();
+}
+
+async function loadLocations(){
+  const s=await getDocs(collection(db,"locais"));
+  locations=[];
+  s.forEach(d=>locations.push({id:d.id,...d.data()}));
+  locations.sort((a,b)=>(a.nome||a.id).localeCompare(b.nome||b.id));
+}
+
+async function loadTrials(){
+  const s=await getDocs(collection(db,"ensaios"));
+  trials=[];
+  s.forEach(d=>trials.push({id:d.id,...d.data()}));
+  trials.sort((a,b)=>(a.nome||a.id).localeCompare(b.nome||b.id));
+}
+
+async function loadActivities(){
+  const s=await getDocs(collection(db,"atividades"));
+  activities=[];
+  s.forEach(d=>activities.push({id:d.id,...d.data()}));
+  activities.sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+}
+
+function populateLocationSelectors(){
+  const options=locations.map(l=>`<option value="${escAttr(l.id)}">${esc(l.nome||l.id)}</option>`).join("");
+  $("homeLocation").innerHTML=options;
+  $("regLocation").innerHTML=options;
+
+  if(locations.length){
+    populateTrialSelectorForLocation("homeLocation","homeTrial");
+    populateTrialSelectorForLocation("regLocation","regTrial");
+  }else{
+    $("homeTrial").innerHTML='<option value="">Nenhum ensaio</option>';
+    $("regTrial").innerHTML='<option value="">Nenhum ensaio</option>';
+  }
+}
+
+function populateTrialSelectorForLocation(locationSelectId,trialSelectId){
+  const locId=$(locationSelectId).value;
+  const list=trials.filter(t=>t.local_id===locId);
+  $(trialSelectId).innerHTML=list.length
+    ? list.map(t=>`<option value="${escAttr(t.id)}">${esc(t.nome||t.id)}</option>`).join("")
+    : '<option value="">Nenhum ensaio neste local</option>';
+}
+
+$("homeLocation").onchange=()=>{
+  populateTrialSelectorForLocation("homeLocation","homeTrial");
+  renderHomeHistory();
+};
+$("regLocation").onchange=()=>populateTrialSelectorForLocation("regLocation","regTrial");
+$("homeTrial").onchange=renderHomeHistory;
+
+$("startRegisterBtn").onclick=()=>{
+  const loc=$("homeLocation").value;
+  const trial=$("homeTrial").value;
+  if(!trial){toast("Selecione um ensaio.");return}
+  $("regLocation").value=loc;
+  populateTrialSelectorForLocation("regLocation","regTrial");
+  $("regTrial").value=trial;
+  $("regDate").value=new Date().toISOString().slice(0,10);
+  navigate("pageRegister");
+};
+
+document.querySelectorAll(".quick").forEach(btn=>{
+  btn.onclick=()=>{
+    const trial=$("homeTrial").value;
+    if(!trial){toast("Selecione um ensaio primeiro.");return}
+    $("regLocation").value=$("homeLocation").value;
+    populateTrialSelectorForLocation("regLocation","regTrial");
+    $("regTrial").value=trial;
+    $("regDate").value=new Date().toISOString().slice(0,10);
+    $("regActivity").value=btn.dataset.activity;
+    navigate("pageRegister");
+  };
+});
+
+$("saveBtn").onclick=async()=>{
+  if(!currentUser)return;
+  const ensaioId=$("regTrial").value;
+  const data=$("regDate").value;
+  const atividade=$("regActivity").value;
+
+  if(!ensaioId||!data||!atividade){
+    toast("Preencha ensaio, data e atividade.");
+    return;
+  }
+
+  const payload={
+    ensaioId,
+    data,
+    atividade,
+    produto:$("regProduct").value.trim(),
+    dose:$("regDose").value.trim(),
+    observacao:$("regObs").value.trim(),
+    registradoPorUid:currentUser.uid,
+    registradoPorNome:userData?.nome||currentUser.displayName||currentUser.email||"",
+    registradoPorEmail:currentUser.email||"",
+    criadoEm:serverTimestamp()
+  };
+
+  $("saveBtn").disabled=true;
+  $("saveBtn").textContent="Salvando...";
+
+  try{
+    await addDoc(collection(db,"atividades"),payload);
+    $("regProduct").value="";
+    $("regDose").value="";
+    $("regObs").value="";
+    await loadActivities();
+    renderHistory();
+    toast("✓ Manejo salvo no Firestore");
+    navigate("pageHome");
+  }catch(e){
+    console.error(e);
+    toast("Erro ao salvar: "+(e.code||"erro"));
+  }finally{
+    $("saveBtn").disabled=false;
+    $("saveBtn").textContent="✓ Salvar manejo";
+  }
+};
+
+function populateHistoryTrial(){
+  $("historyTrial").innerHTML='<option value="">Todos os ensaios</option>'+
+    trials.map(t=>`<option value="${escAttr(t.id)}">${esc(t.nome||t.id)}</option>`).join("");
+}
+$("historyTrial").onchange=renderHistory;
+$("refreshHistoryBtn").onclick=async()=>{await loadActivities();renderHistory();toast("Histórico atualizado")};
+
+function renderHistory(){
+  renderHomeHistory();
+
+  const filter=$("historyTrial").value;
+  const list=filter?activities.filter(a=>a.ensaioId===filter):activities;
+  $("historyList").innerHTML=list.length
+    ? list.slice(0,40).map(activityHtml).join("")
+    : '<div class="empty">Nenhum manejo registrado.</div>';
+}
+
+function renderHomeHistory(){
+  const trialId=$("homeTrial").value;
+  const list=activities.filter(a=>a.ensaioId===trialId).slice(0,5);
+  $("homeHistory").innerHTML=list.length
+    ? list.map(activityHtml).join("")
+    : '<div class="empty">Nenhum registro para este ensaio.</div>';
+}
+
+function activityHtml(a){
+  const trial=trials.find(t=>t.id===a.ensaioId);
+  const details=[a.produto,a.dose,a.observacao].filter(Boolean).join(" • ");
+  return `<div class="history-item">
+    <div class="history-top">
+      <div class="history-title">${esc(a.atividade||"Atividade")}</div>
+      <div class="history-date">${fmtDate(a.data)}</div>
+    </div>
+    <div class="history-meta">
+      ${esc(trial?.nome||a.ensaioId||"")}
+      ${details?'<br>'+esc(details):''}
+      ${a.registradoPorNome?'<br>Por: '+esc(a.registradoPorNome):''}
+    </div>
+  </div>`;
+}
+
+/* bottom nav */
+document.querySelectorAll(".bottom-nav button").forEach(btn=>{
+  btn.onclick=()=>navigate(btn.dataset.page);
+});
+function navigate(pageId){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  $(pageId).classList.add("active");
+  document.querySelectorAll(".bottom-nav button").forEach(b=>b.classList.toggle("active",b.dataset.page===pageId));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* helpers */
+function toast(msg){
+  const t=$("toast");t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2600);
+}
+function fmtDate(s){
+  if(!s)return"";
+  const d=new Date(String(s)+"T12:00:00");
+  return isNaN(d)?s:d.toLocaleDateString("pt-BR");
+}
+function esc(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+function escAttr(s){return esc(s)}
+</script>
+</body>
+</html>
