@@ -3,12 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Rede de Ensaios RS — V6.1</title>
+<title>Rede de Ensaios RS — V6.2</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
- integrity="sha256-p4NxAoJBhIINfQ3yn5/NdODNseJPQwz1I8QXvrY5f9A=" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
+
+/* ===== Leaflet critical layout fallback (V6.2) =====
+   Mantido no próprio HTML para evitar tiles desalinhados caso o CSS externo
+   do Leaflet seja bloqueado, parcialmente carregado ou alterado pelo navegador. */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+}
+.leaflet-container {
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent;
+  background: #ddd;
+  outline-offset: 1px;
+}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.leaflet-tile {
+  width: 256px !important;
+  height: 256px !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+.leaflet-tile-container {
+  pointer-events: none;
+}
+.leaflet-zoom-animated {
+  transform-origin: 0 0;
+}
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane {
+  position: absolute !important;
+  left: 0;
+  top: 0;
+}
+.leaflet-map-pane canvas {
+  z-index: 100;
+}
+.leaflet-tile-pane { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane { z-index: 500; }
+.leaflet-marker-pane { z-index: 600; }
+.leaflet-tooltip-pane { z-index: 650; }
+.leaflet-popup-pane { z-index: 700; }
+.leaflet-control {
+  position: relative;
+  z-index: 800;
+  pointer-events: auto;
+}
+.leaflet-top,
+.leaflet-bottom {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+.leaflet-top { top: 0; }
+.leaflet-right { right: 0; }
+.leaflet-bottom { bottom: 0; }
+.leaflet-left { left: 0; }
+.leaflet-control-zoom a {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+#map, #mapOverview {
+  position: relative !important;
+  isolation: isolate;
+}
+
 :root{
   --bg:#f4f7f5;--card:#fff;--dark:#14251e;--dark2:#1d352b;--text:#17231e;
   --muted:#708078;--line:#dfe7e2;--green:#208a57;--green2:#176a43;
@@ -52,7 +143,7 @@ select,input,textarea{border:1px solid var(--line);border-radius:8px;padding:9px
 .danger{background:#fff;color:var(--red);border:1px solid #efc9c9;border-radius:8px;padding:7px 10px;cursor:pointer}
 .table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}.table th{background:#f8faf9;color:var(--muted)}
 .tag{font-size:10px;padding:3px 6px;border-radius:12px;background:#eef2ef}.tag.green{background:#e5f4eb;color:#17643f}.tag.red{background:#fae7e7;color:#a63232}.tag.yellow{background:#fff1cf;color:#8a6500}
-#map{height:520px;border-radius:10px;overflow:hidden}
+#map{height:520px;border-radius:10px;overflow:hidden;position:relative} #map img,#mapOverview img{max-width:none!important}
 .audit{background:#f5f8f6;padding:10px;border-radius:8px;font-size:11px;color:var(--muted);margin-top:12px}
 .toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .csvbox{border:1px dashed #b8c7be;border-radius:10px;padding:16px;background:#f8fbf9}
@@ -124,7 +215,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 
 <section class="page active" id="overview">
   <h1>Visão geral da rede</h1>
-  <div class="sub">V6.1 conectada ao Firestore, com mapa Leaflet corrigido</div>
+  <div class="sub">V6.2 conectada ao Firestore, com CSS Leaflet incorporado</div>
   <div class="cards">
     <div class="card"><div class="label">LOCAIS</div><div class="value" id="kpiLocations">0</div></div>
     <div class="card"><div class="label">ENSAIOS</div><div class="value" id="kpiTrials">0</div></div>
@@ -265,8 +356,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 
 <div id="toast" class="toast"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
- integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
