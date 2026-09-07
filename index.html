@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Rede de Ensaios RS — V6.3</title>
+<title>Rede de Ensaios RS — V6.4</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -216,7 +216,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 
 <section class="page active" id="overview">
   <h1>Visão geral da rede</h1>
-  <div class="sub">V6.3 com gestão de usuários dentro da plataforma</div>
+  <div class="sub">V6.4 com convites seguros por e-mail</div>
   <div class="cards">
     <div class="card"><div class="label">LOCAIS</div><div class="value" id="kpiLocations">0</div></div>
     <div class="card"><div class="label">ENSAIOS</div><div class="value" id="kpiTrials">0</div></div>
@@ -332,7 +332,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
     </table>
   </div>
   <div class="audit">
-    Cadastre o usuário pelo e-mail antes do primeiro acesso. No primeiro login Google, a plataforma vincula automaticamente o UID ao cadastro.
+    Cadastre o usuário por e-mail. O sistema cria um convite seguro e, no primeiro login Google, vincula automaticamente o UID.
   </div>
 </section>
 
@@ -433,6 +433,7 @@ let locations=[];
 let trials=[];
 let activities=[];
 let users=[];
+let invites=[];
 let mainMap=null;
 let overviewMap=null;
 let mapLayer=L.layerGroup();
@@ -455,31 +456,51 @@ onAuthStateChanged(auth,async user=>{
   currentUser=user;
   if(!user){showLogin();return;}
   try{
-    let snap=await getDoc(doc(db,"usuarios",user.uid));
-    let data=null;
+    const userSnap=await getDoc(doc(db,"usuarios",user.uid));
 
-    if(snap.exists()){
-      data=snap.data();
-    }else{
-      const email=(user.email||"").trim().toLowerCase();
-      const qs=await getDocs(query(collection(db,"usuarios"),where("email_normalizado","==",email)));
-      if(qs.empty){showDenied("Sua conta Google autenticou, mas seu e-mail não está autorizado.");return;}
-
-      const pre=qs.docs[0];
-      data=pre.data();
-      if(data.ativo!==true){showDenied("Seu usuário está cadastrado, porém está inativo.");return;}
-
-      const linked={...data,uid:user.uid,atualizadoEm:serverTimestamp()};
-      await setDoc(doc(db,"usuarios",user.uid),linked,{merge:true});
-      if(pre.id!==user.uid){try{await deleteDoc(doc(db,"usuarios",pre.id));}catch(_){}}
-      data=linked;
+    if(userSnap.exists()){
+      const data=userSnap.data();
+      if(data.ativo!==true){showDenied("Seu usuário está inativo.");return;}
+      accessProfile=data.perfil||"usuario";
+      showApp(); renderUser(user,data); applyPermissions();
+      await reloadAll();
+      return;
     }
 
-    if(data.ativo!==true){showDenied("Seu usuário está inativo.");return;}
-    accessProfile=data.perfil||"usuario";
-    showApp(); renderUser(user,data); applyPermissions();
+    const email=(user.email||"").trim().toLowerCase();
+    const inviteSnap=await getDoc(doc(db,"convites",email));
+
+    if(!inviteSnap.exists()){
+      showDenied("Sua conta Google autenticou, mas seu e-mail não está autorizado.");
+      return;
+    }
+
+    const invite=inviteSnap.data();
+    if(invite.ativo!==true){
+      showDenied("Seu convite existe, porém está inativo.");
+      return;
+    }
+
+    const linked={
+      nome:invite.nome||user.displayName||"",
+      email:user.email||email,
+      email_normalizado:email,
+      perfil:invite.perfil||"campo",
+      ativo:true,
+      uid:user.uid,
+      criadoEm:serverTimestamp(),
+      atualizadoEm:serverTimestamp()
+    };
+
+    await setDoc(doc(db,"usuarios",user.uid),linked);
+
+    accessProfile=linked.perfil;
+    showApp(); renderUser(user,linked); applyPermissions();
     await reloadAll();
-  }catch(e){console.error(e);showDenied("Não foi possível validar o acesso: "+(e.code||"erro"));}
+  }catch(e){
+    console.error(e);
+    showDenied("Não foi possível validar o acesso: "+(e.code||"erro"));
+  }
 });
 
 function showLogin(){$("loginScreen").classList.remove("hidden");$("deniedScreen").classList.add("hidden");$("app").classList.add("hidden")}
@@ -536,10 +557,15 @@ async function loadActivities(){
   activities=[];s.forEach(d=>activities.push({id:d.id,...d.data()}));
 }
 async function loadUsers(){
-  if(accessProfile!=="admin"){users=[];return;}
-  const s=await getDocs(collection(db,"usuarios"));
-  users=[];s.forEach(d=>users.push({id:d.id,...d.data()}));
+  if(accessProfile!=="admin"){users=[];invites=[];return;}
+  const [su,si]=await Promise.all([
+    getDocs(collection(db,"usuarios")),
+    getDocs(collection(db,"convites"))
+  ]);
+  users=[];su.forEach(d=>users.push({id:d.id,...d.data()}));
+  invites=[];si.forEach(d=>invites.push({id:d.id,...d.data()}));
   users.sort((a,b)=>(a.nome||a.email||a.id).localeCompare(b.nome||b.email||b.id));
+  invites.sort((a,b)=>(a.nome||a.email||a.id).localeCompare(b.nome||b.email||b.id));
 }
 function renderAll(){
   renderKPIs();
@@ -799,74 +825,111 @@ function renderUsersTable(){
     return;
   }
 
+  const linkedEmails=new Set(users.map(u=>(u.email_normalizado||u.email||"").toLowerCase()));
+
   for(const u of users){
-    const tr=document.createElement("tr");
     const active=u.ativo===true;
+    const tr=document.createElement("tr");
     tr.innerHTML=`<td>${esc(u.nome||"")}</td><td>${esc(u.email||"")}</td><td>${esc(u.perfil||"")}</td><td><span class="tag ${active?"green":"red"}">${active?"Ativo":"Inativo"}</span></td><td>${esc(u.uid||u.id||"")}</td><td></td>`;
     const td=tr.lastElementChild;
 
-    const editBtn=document.createElement("button");
-    editBtn.className="secondary"; editBtn.textContent="Editar";
-    editBtn.onclick=()=>openUserModal(u);
+    const edit=document.createElement("button");
+    edit.className="secondary"; edit.textContent="Editar"; edit.onclick=()=>openLinkedUser(u);
 
-    const toggleBtn=document.createElement("button");
-    toggleBtn.className=active?"danger":"primary";
-    toggleBtn.style.marginLeft="6px";
-    toggleBtn.textContent=active?"Desativar":"Ativar";
-    toggleBtn.onclick=()=>toggleUser(u);
+    const toggle=document.createElement("button");
+    toggle.className=active?"danger":"primary"; toggle.style.marginLeft="6px";
+    toggle.textContent=active?"Desativar":"Ativar"; toggle.onclick=()=>toggleUser(u);
 
-    const delBtn=document.createElement("button");
-    delBtn.className="danger"; delBtn.style.marginLeft="6px"; delBtn.textContent="Excluir";
-    delBtn.onclick=()=>deleteUser(u);
+    const del=document.createElement("button");
+    del.className="danger"; del.style.marginLeft="6px"; del.textContent="Excluir"; del.onclick=()=>deleteUser(u);
 
-    td.append(editBtn,toggleBtn,delBtn);
-    tb.appendChild(tr);
+    td.append(edit,toggle,del); tb.appendChild(tr);
+  }
+
+  for(const inv of invites){
+    const email=(inv.email_normalizado||inv.email||inv.id||"").toLowerCase();
+    if(linkedEmails.has(email)) continue;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${esc(inv.nome||"")}</td><td>${esc(inv.email||inv.id||"")}</td><td>${esc(inv.perfil||"")}</td><td><span class="tag yellow">Convite pendente</span></td><td>—</td><td></td>`;
+    const td=tr.lastElementChild;
+
+    const edit=document.createElement("button");
+    edit.className="secondary"; edit.textContent="Editar convite"; edit.onclick=()=>openInvite(inv);
+
+    const del=document.createElement("button");
+    del.className="danger"; del.style.marginLeft="6px"; del.textContent="Excluir convite"; del.onclick=()=>deleteInvite(inv);
+
+    td.append(edit,del); tb.appendChild(tr);
   }
 }
 
-$("newUserBtn").onclick=()=>openUserModal(null);
+$("newUserBtn").onclick=()=>openInvite(null);
 $("cancelUserBtn").onclick=()=>$("userModal").classList.remove("show");
 
-function openUserModal(u){
-  editingUserDocId=u?.id||null;
-  $("userModalTitle").textContent=u?"Editar usuário":"Novo usuário";
-  $("usrName").value=u?.nome||"";
-  $("usrEmail").value=u?.email||"";
-  $("usrProfile").value=u?.perfil||"campo";
-  $("usrActive").value=(u?.ativo===false)?"false":"true";
-  $("usrUid").value=u?.uid||((u?.id&&u.id.length>20)?u.id:"")||"";
+function openInvite(inv){
+  editingUserDocId=inv?.id||null;
+  $("userModalTitle").textContent=inv?"Editar convite":"Novo usuário";
+  $("usrName").value=inv?.nome||"";
+  $("usrEmail").value=inv?.email||inv?.id||"";
+  $("usrEmail").disabled=!!inv;
+  $("usrProfile").value=inv?.perfil||"campo";
+  $("usrActive").value=(inv?.ativo===false)?"false":"true";
+  $("usrUid").value="";
+  $("usrUid").disabled=true;
+  $("userModal").classList.add("show");
+}
+
+function openLinkedUser(u){
+  editingUserDocId=u.id;
+  $("userModalTitle").textContent="Editar usuário";
+  $("usrName").value=u.nome||"";
+  $("usrEmail").value=u.email||"";
+  $("usrEmail").disabled=true;
+  $("usrProfile").value=u.perfil||"campo";
+  $("usrActive").value=(u.ativo===false)?"false":"true";
+  $("usrUid").value=u.uid||u.id||"";
+  $("usrUid").disabled=true;
   $("userModal").classList.add("show");
 }
 
 $("saveUserBtn").onclick=async()=>{
   if(accessProfile!=="admin") return;
+
   const nome=$("usrName").value.trim();
   const email=$("usrEmail").value.trim();
   const emailNorm=email.toLowerCase();
   const perfil=$("usrProfile").value;
   const ativo=$("usrActive").value==="true";
-  const uid=$("usrUid").value.trim();
 
   if(!nome||!email){toast("Informe nome e e-mail.");return}
 
-  const payload={nome,email,email_normalizado:emailNorm,perfil,ativo,uid:uid||"",atualizadoEm:serverTimestamp()};
-
   try{
-    let docId;
-    if(uid) docId=uid;
-    else if(editingUserDocId) docId=editingUserDocId;
-    else docId="email_"+Math.random().toString(36).slice(2,12);
+    const linked=users.find(u=>u.id===editingUserDocId);
 
-    await setDoc(doc(db,"usuarios",docId),payload,{merge:true});
-    if(editingUserDocId && editingUserDocId!==docId){
-      try{await deleteDoc(doc(db,"usuarios",editingUserDocId));}catch(_){}
+    if(linked){
+      await setDoc(doc(db,"usuarios",linked.id),{
+        nome,perfil,ativo,atualizadoEm:serverTimestamp()
+      },{merge:true});
+    }else{
+      await setDoc(doc(db,"convites",emailNorm),{
+        nome,
+        email,
+        email_normalizado:emailNorm,
+        perfil,
+        ativo,
+        atualizadoEm:serverTimestamp()
+      },{merge:true});
     }
 
     $("userModal").classList.remove("show");
+    $("usrEmail").disabled=false;
+    $("usrUid").disabled=false;
     await loadUsers(); renderUsersTable();
-    toast("✓ Usuário salvo");
+    toast("✓ Acesso salvo");
   }catch(e){
-    console.error(e); toast("Erro ao salvar usuário: "+(e.code||"erro"));
+    console.error(e);
+    toast("Erro ao salvar usuário: "+(e.code||"erro"));
   }
 };
 
@@ -876,7 +939,10 @@ async function toggleUser(u){
     if(!confirm("Você está prestes a desativar o próprio acesso. Continuar?")) return;
   }
   try{
-    await setDoc(doc(db,"usuarios",u.id),{ativo:!(u.ativo===true),atualizadoEm:serverTimestamp()},{merge:true});
+    await setDoc(doc(db,"usuarios",u.id),{
+      ativo:!(u.ativo===true),
+      atualizadoEm:serverTimestamp()
+    },{merge:true});
     await loadUsers(); renderUsersTable(); toast("Status atualizado");
   }catch(e){console.error(e);toast("Erro ao atualizar usuário")}
 }
@@ -889,6 +955,15 @@ async function deleteUser(u){
     await deleteDoc(doc(db,"usuarios",u.id));
     await loadUsers(); renderUsersTable(); toast("Usuário excluído");
   }catch(e){console.error(e);toast("Erro ao excluir usuário")}
+}
+
+async function deleteInvite(inv){
+  if(accessProfile!=="admin") return;
+  if(!confirm("Excluir o convite de "+(inv.email||inv.id)+"?")) return;
+  try{
+    await deleteDoc(doc(db,"convites",inv.id));
+    await loadUsers(); renderUsersTable(); toast("Convite excluído");
+  }catch(e){console.error(e);toast("Erro ao excluir convite")}
 }
 
 /* MAP FILTERS */
