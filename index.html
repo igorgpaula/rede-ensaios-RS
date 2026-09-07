@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Rede de Ensaios RS — V6.4</title>
+<title>Rede de Ensaios RS — V6.5</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -157,7 +157,7 @@ select,input,textarea{border:1px solid var(--line);border-radius:8px;padding:9px
 textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 .toast{display:none;position:fixed;right:20px;bottom:20px;background:#173328;color:#fff;padding:12px 16px;border-radius:9px;font-size:12px;z-index:3000}.toast.show{display:block}
 .kpi-small{font-size:11px;color:var(--muted);margin-top:5px}
-.admin-only.hidden-admin{display:none!important}
+.admin-only.hidden-admin{display:none!important}.permission-note{padding:10px 12px;border-radius:8px;background:#fff7df;color:#7a5b00;font-size:11px;border:1px solid #f0dfad;margin-bottom:12px}
 
 @media(max-width:1000px){.cards{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 @media(max-width:760px){
@@ -216,7 +216,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 
 <section class="page active" id="overview">
   <h1>Visão geral da rede</h1>
-  <div class="sub">V6.4 com convites seguros por e-mail</div>
+  <div class="sub">V6.5 com cadastros manuais e importação CSV</div>
   <div class="cards">
     <div class="card"><div class="label">LOCAIS</div><div class="value" id="kpiLocations">0</div></div>
     <div class="card"><div class="label">ENSAIOS</div><div class="value" id="kpiTrials">0</div></div>
@@ -252,6 +252,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
   <h1>Locais</h1>
   <div class="sub">Cadastro dos locais físicos da rede, com latitude e longitude</div>
 
+  <div id="locationsPermission" class="permission-note hidden">Seu perfil pode consultar locais, mas somente administradores podem cadastrar/editar locais ou importar CSV.</div>
   <div class="toolbar">
     <div class="help">Use um local por área física. Vários ensaios podem compartilhar o mesmo local.</div>
     <button id="newLocationBtn" class="primary admin-only">＋ Novo local</button>
@@ -279,6 +280,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
   <h1>Ensaios</h1>
   <div class="sub">Cadastro dos ensaios vinculados aos locais</div>
 
+  <div id="trialsPermission" class="permission-note hidden">Seu perfil pode consultar ensaios, mas somente administradores podem cadastrar/editar ensaios ou importar CSV.</div>
   <div class="toolbar">
     <div class="help">Cada ensaio deve apontar para um <b>local_id</b> existente.</div>
     <button id="newTrialBtn" class="primary admin-only">＋ Novo ensaio</button>
@@ -302,20 +304,52 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
   </div>
 </section>
 
+
 <section class="page" id="management">
   <h1>Manejo realizado</h1>
-  <div class="sub">Atividades gravadas no Firestore</div>
+  <div class="sub">Cadastro manual e importação de atividades/manejos pelo CSV</div>
+
+  <div class="toolbar">
+    <div class="help">Usuários ativos podem registrar manejo. O autor fica vinculado automaticamente ao login.</div>
+    <button id="newActivityBtn" class="primary">＋ Nova atividade</button>
+  </div>
+
   <div class="filters">
     <select id="activityTrialFilter"><option value="">Todos os ensaios</option></select>
     <button id="reloadActivitiesBtn" class="secondary">↻ Atualizar</button>
   </div>
+
   <div class="panel">
     <table class="table" id="activitiesTable">
-      <thead><tr><th>Data</th><th>Ensaio</th><th>Atividade</th><th>Produto</th><th>Dose</th><th>Registrado por</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Ensaio</th>
+          <th>Atividade</th>
+          <th>Produto</th>
+          <th>Dose</th>
+          <th>Registrado por</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </div>
+
+  <div class="panel">
+    <h2>📤 Importar manejo por CSV</h2>
+    <div class="csvbox">
+      <input type="file" id="activitiesCsv" accept=".csv,text/csv">
+      <p class="help">
+        Cabeçalhos: <b>ensaio_id, data, atividade, produto, dose, observacao</b>.
+        O usuário que importar será registrado automaticamente como autor.
+      </p>
+      <button id="importActivitiesBtn" class="primary">Importar CSV de manejo</button>
+      <button id="downloadActivitiesTemplateBtn" class="secondary">Baixar modelo CSV</button>
+    </div>
+  </div>
 </section>
+
 
 
 <section class="page" id="users">
@@ -375,6 +409,37 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 </div></div>
 
 
+
+<!-- ACTIVITY MODAL -->
+<div id="activityModal" class="modal"><div class="modal-card">
+  <h2>Nova atividade / manejo</h2>
+  <div class="formgrid">
+    <div class="field"><label>ENSAIO</label><select id="activityTrial"></select></div>
+    <div class="field"><label>DATA</label><input id="activityDate" type="date"></div>
+    <div class="field"><label>ATIVIDADE</label>
+      <select id="activityType">
+        <option>Semeadura</option>
+        <option>Emergência</option>
+        <option>Adubação</option>
+        <option>Herbicida</option>
+        <option>Fungicida</option>
+        <option>Inseticida</option>
+        <option>Avaliação</option>
+        <option>Colheita</option>
+        <option>Outra</option>
+      </select>
+    </div>
+    <div class="field"><label>PRODUTO</label><input id="activityProduct" placeholder="Opcional"></div>
+    <div class="field"><label>DOSE</label><input id="activityDose" placeholder="Ex.: 0,6 L/ha"></div>
+    <div class="field full"><label>OBSERVAÇÃO</label><textarea id="activityObs"></textarea></div>
+  </div>
+  <div id="activityAudit" class="audit"></div>
+  <div class="actions">
+    <button id="cancelActivityBtn" class="secondary">Cancelar</button>
+    <button id="saveActivityBtn" class="primary">Salvar atividade</button>
+  </div>
+</div></div>
+
 <!-- USER MODAL -->
 <div id="userModal" class="modal"><div class="modal-card">
   <h2 id="userModalTitle">Novo usuário</h2>
@@ -406,7 +471,7 @@ textarea{min-height:80px}.actions{text-align:right;margin-top:14px}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs,
+  getFirestore, doc, getDoc, setDoc, deleteDoc, collection, getDocs, addDoc,
   query, where, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
@@ -512,7 +577,13 @@ function renderUser(u,data){
   $("avatar").innerHTML=u.photoURL?'<img src="'+u.photoURL+'" alt="foto">':name.slice(0,1).toUpperCase();
 }
 function applyPermissions(){
-  if(accessProfile!=="admin") document.querySelectorAll(".admin-only").forEach(x=>x.classList.add("hidden-admin"));
+  const isAdmin=accessProfile==="admin";
+  document.querySelectorAll(".admin-only").forEach(x=>{
+    if(isAdmin) x.classList.remove("hidden-admin");
+    else x.classList.add("hidden-admin");
+  });
+  if($("locationsPermission")) $("locationsPermission").classList.toggle("hidden",isAdmin);
+  if($("trialsPermission")) $("trialsPermission").classList.toggle("hidden",isAdmin);
 }
 
 /* NAV */
@@ -796,6 +867,9 @@ async function deleteTrial(id){
 function populateTrialFilters(){
   const opts='<option value="">Todos os ensaios</option>'+trials.map(t=>`<option value="${escAttr(t.id)}">${esc(t.nome||t.id)}</option>`).join("");
   $("activityTrialFilter").innerHTML=opts;
+  if($("activityTrial")){
+    $("activityTrial").innerHTML=trials.map(t=>`<option value="${escAttr(t.id)}">${esc(t.nome||t.id)}</option>`).join("");
+  }
 }
 $("reloadActivitiesBtn").onclick=async()=>{await loadActivities();renderActivitiesTable()};
 $("activityTrialFilter").onchange=renderActivitiesTable;
@@ -805,7 +879,7 @@ function renderActivitiesTable(){
   activities.filter(a=>!filter||a.ensaioId===filter).sort((a,b)=>String(b.data||"").localeCompare(String(a.data||""))).forEach(a=>{
     const t=trialById(a.ensaioId);
     const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${fmtDate(a.data)}</td><td>${esc(t?.nome||a.ensaioId||"")}</td><td>${esc(a.atividade||"")}</td><td>${esc(a.produto||"—")}</td><td>${esc(a.dose||"—")}</td><td>${esc(a.registradoPorNome||a.registradoPorEmail||"")}</td>`;
+    tr.innerHTML=`<td>${fmtDate(a.data)}</td><td>${esc(t?.nome||a.ensaioId||"")}</td><td>${esc(a.atividade||"")}</td><td>${esc(a.produto||"—")}</td><td>${esc(a.dose||"—")}</td><td>${esc(a.registradoPorNome||a.registradoPorEmail||"")}</td><td>${esc(a.observacao||"—")}</td>`;
     tb.appendChild(tr);
   });
 }
@@ -965,6 +1039,92 @@ async function deleteInvite(inv){
     await loadUsers(); renderUsersTable(); toast("Convite excluído");
   }catch(e){console.error(e);toast("Erro ao excluir convite")}
 }
+
+
+/* ACTIVITIES CRUD + CSV */
+$("newActivityBtn").onclick=()=>{
+  if(!trials.length){toast("Cadastre pelo menos um ensaio antes de registrar manejo.");return}
+  populateTrialFilters();
+  $("activityDate").value=new Date().toISOString().slice(0,10);
+  $("activityType").value="Fungicida";
+  $("activityProduct").value="";
+  $("activityDose").value="";
+  $("activityObs").value="";
+  $("activityAudit").textContent="Autor: "+(currentUser?.displayName||currentUser?.email||"usuário logado");
+  $("activityModal").classList.add("show");
+};
+$("cancelActivityBtn").onclick=()=>$("activityModal").classList.remove("show");
+
+$("saveActivityBtn").onclick=async()=>{
+  if(!currentUser)return;
+  const ensaioId=$("activityTrial").value;
+  const data=$("activityDate").value;
+  const atividade=$("activityType").value;
+  if(!ensaioId||!data||!atividade){toast("Informe ensaio, data e atividade.");return}
+
+  const payload={
+    ensaioId,
+    data,
+    atividade,
+    produto:$("activityProduct").value.trim(),
+    dose:$("activityDose").value.trim(),
+    observacao:$("activityObs").value.trim(),
+    registradoPorUid:currentUser.uid,
+    registradoPorNome:currentUser.displayName||currentUser.email||"",
+    registradoPorEmail:currentUser.email||"",
+    criadoEm:serverTimestamp()
+  };
+
+  try{
+    await addDoc(collection(db,"atividades"),payload);
+    $("activityModal").classList.remove("show");
+    await loadActivities(); renderActivitiesTable(); renderKPIs();
+    toast("✓ Atividade salva");
+  }catch(e){
+    console.error(e);toast("Erro ao salvar atividade: "+(e.code||"erro"));
+  }
+};
+
+$("importActivitiesBtn").onclick=async()=>{
+  if(!currentUser)return;
+  try{
+    const rows=parseCsv(await readFile($("activitiesCsv")));
+    if(!rows.length){toast("CSV vazio ou inválido.");return}
+
+    let ok=0,skip=0;
+    for(const r of rows){
+      const ensaioId=(r.ensaio_id||r.ensaioid||"").trim();
+      const data=(r.data||"").trim();
+      const atividade=(r.atividade||"").trim();
+      if(!ensaioId||!data||!atividade){skip++;continue}
+
+      await addDoc(collection(db,"atividades"),{
+        ensaioId,
+        data,
+        atividade,
+        produto:(r.produto||"").trim(),
+        dose:(r.dose||"").trim(),
+        observacao:(r.observacao||r.obs||"").trim(),
+        registradoPorUid:currentUser.uid,
+        registradoPorNome:currentUser.displayName||currentUser.email||"",
+        registradoPorEmail:currentUser.email||"",
+        criadoEm:serverTimestamp()
+      });
+      ok++;
+    }
+
+    await loadActivities(); renderActivitiesTable(); renderKPIs();
+    toast(`✓ ${ok} atividade(s) importada(s)`+(skip?` • ${skip} ignorada(s)`:""));
+  }catch(e){
+    console.error(e);toast("Erro no CSV de manejo: "+(e.message||e.code||"erro"));
+  }
+};
+
+$("downloadActivitiesTemplateBtn").onclick=()=>downloadText(
+  "modelo_manejo.csv",
+  "ensaio_id,data,atividade,produto,dose,observacao\nVCU-PF-2026,2026-08-27,Fungicida,Produto X,0.6 L/ha,Aplicacao realizada em boas condicoes\n"
+);
+
 
 /* MAP FILTERS */
 function populateMapFilters(){
